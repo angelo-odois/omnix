@@ -7,10 +7,6 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test:email": "tsx src/services/testEmail.ts",
-    "test:simple": "tsx src/testSimpleEmail.ts",
-    "test:debug": "tsx src/testSMTPDebug.ts",
     "docker:build": "docker build -t omnix-backend .",
     "docker:run": "docker run -p 3001:3001 --env-file .env.production omnix-backend"
   },
