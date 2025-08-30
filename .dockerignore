@@ -1,52 +1,33 @@
-# Ignorar arquivos desnecessários no Docker build
-
 # Node modules
 node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Build artifacts
-dist/
-build/
-.build/
+**/node_modules/
 
 # Logs
 *.log
 logs/
 
 # Environment files (usar secrets no Coolify)
-.env
-.env.local
-.env.development
-.env.test
+.env*
 
 # Git
 .git/
 .gitignore
 
-# IDE
+# IDE e OS
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# OS
 .DS_Store
 Thumbs.db
 
 # Frontend (não necessário para deploy backend)
-frontend/node_modules/
-frontend/dist/
-frontend/.next/
+frontend/
 
-# Mac app
-OmniXMac/
-*.app
+# Build artifacts locais
+dist/
+build/
+.build/
+*.tsbuildinfo
 
-# Documentação
-*.md
-instrucao
-
-# Scripts de desenvolvimento
+# Scripts e documentação
 *.sh
+*.md
