@@ -1,31 +1,31 @@
-import { useCallback, useRef, useState, useEffect } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import {
   ReactFlow,
-  Node,
-  Edge,
   addEdge,
-  Connection,
   useNodesState,
   useEdgesState,
   Controls,
   Background,
   BackgroundVariant,
-  ReactFlowProvider,
+  ReactFlowProvider
+} from '@xyflow/react';
+import type {
+  Node,
+  Edge,
   ReactFlowInstance,
-  OnNodesChange,
-  OnEdgesChange,
   OnConnect,
-  NodeDragHandler,
   NodeMouseHandler
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { nodeTypes } from './nodes';
-import WorkflowSidebar, { NodeTemplate } from './WorkflowSidebar';
+import WorkflowSidebar from './WorkflowSidebar';
 import NodeConfigModal from './NodeConfigModal';
-import { WorkflowNode, WorkflowNodeType } from '../../types/workflow';
+import { WorkflowNodeType } from '../../types/workflow';
+import type { NodeTemplate } from './WorkflowSidebar';
+import type { WorkflowNode } from '../../types/workflow';
 import { validateWorkflow } from '../../utils/workflowValidation';
-import { Save, Play, Eye, Settings, Trash2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Save, Play, Eye, Settings, Trash2 } from 'lucide-react';
 import Button from '../ui/Button';
 
 interface WorkflowEditorProps {

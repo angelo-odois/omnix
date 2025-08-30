@@ -8,26 +8,30 @@ export interface WorkflowNode {
   connections?: string[]; // IDs dos próximos nós
 }
 
-export enum WorkflowNodeType {
-  TRIGGER = 'trigger',
-  CONDITION = 'condition', 
-  ACTION = 'action',
-  DELAY = 'delay',
-  END = 'end'
-}
+export const WorkflowNodeType = {
+  TRIGGER: 'trigger',
+  CONDITION: 'condition', 
+  ACTION: 'action',
+  DELAY: 'delay',
+  END: 'end'
+} as const;
+
+export type WorkflowNodeType = (typeof WorkflowNodeType)[keyof typeof WorkflowNodeType];
 
 export interface WorkflowTrigger {
   type: WorkflowTriggerType;
   config: WorkflowTriggerConfig;
 }
 
-export enum WorkflowTriggerType {
-  MESSAGE_RECEIVED = 'message_received',
-  KEYWORD = 'keyword',
-  SCHEDULE = 'schedule',
-  WEBHOOK = 'webhook',
-  MANUAL = 'manual'
-}
+export const WorkflowTriggerType = {
+  MESSAGE_RECEIVED: 'message_received',
+  KEYWORD: 'keyword',
+  SCHEDULE: 'schedule',
+  WEBHOOK: 'webhook',
+  MANUAL: 'manual'
+} as const;
+
+export type WorkflowTriggerType = (typeof WorkflowTriggerType)[keyof typeof WorkflowTriggerType];
 
 export interface WorkflowTriggerConfig {
   // Para MESSAGE_RECEIVED
@@ -54,13 +58,15 @@ export interface WorkflowCondition {
   config: WorkflowConditionConfig;
 }
 
-export enum WorkflowConditionType {
-  TEXT_CONTAINS = 'text_contains',
-  TEXT_EQUALS = 'text_equals',
-  USER_TAG = 'user_tag',
-  TIME_RANGE = 'time_range',
-  CUSTOM = 'custom'
-}
+export const WorkflowConditionType = {
+  TEXT_CONTAINS: 'text_contains',
+  TEXT_EQUALS: 'text_equals',
+  USER_TAG: 'user_tag',
+  TIME_RANGE: 'time_range',
+  CUSTOM: 'custom'
+} as const;
+
+export type WorkflowConditionType = (typeof WorkflowConditionType)[keyof typeof WorkflowConditionType];
 
 export interface WorkflowConditionConfig {
   // Para TEXT_CONTAINS/TEXT_EQUALS
@@ -84,15 +90,17 @@ export interface WorkflowAction {
   config: WorkflowActionConfig;
 }
 
-export enum WorkflowActionType {
-  SEND_MESSAGE = 'send_message',
-  SEND_MEDIA = 'send_media',
-  ADD_TAG = 'add_tag',
-  REMOVE_TAG = 'remove_tag',
-  ASSIGN_AGENT = 'assign_agent',
-  WEBHOOK = 'webhook',
-  SAVE_DATA = 'save_data'
-}
+export const WorkflowActionType = {
+  SEND_MESSAGE: 'send_message',
+  SEND_MEDIA: 'send_media',
+  ADD_TAG: 'add_tag',
+  REMOVE_TAG: 'remove_tag',
+  ASSIGN_AGENT: 'assign_agent',
+  WEBHOOK: 'webhook',
+  SAVE_DATA: 'save_data'
+} as const;
+
+export type WorkflowActionType = (typeof WorkflowActionType)[keyof typeof WorkflowActionType];
 
 export interface WorkflowActionConfig {
   // Para SEND_MESSAGE
@@ -160,12 +168,14 @@ export interface WorkflowExecution {
   error?: string;
 }
 
-export enum WorkflowExecutionStatus {
-  RUNNING = 'running',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  PAUSED = 'paused'
-}
+export const WorkflowExecutionStatus = {
+  RUNNING: 'running',
+  COMPLETED: 'completed',
+  FAILED: 'failed',
+  PAUSED: 'paused'
+} as const;
+
+export type WorkflowExecutionStatus = (typeof WorkflowExecutionStatus)[keyof typeof WorkflowExecutionStatus];
 
 export interface WorkflowTemplate {
   id: string;
@@ -177,13 +187,15 @@ export interface WorkflowTemplate {
   isPublic: boolean;
 }
 
-export enum WorkflowCategory {
-  CUSTOMER_SERVICE = 'customer_service',
-  SALES = 'sales',
-  MARKETING = 'marketing',
-  AUTOMATION = 'automation',
-  CUSTOM = 'custom'
-}
+export const WorkflowCategory = {
+  CUSTOMER_SERVICE: 'customer_service',
+  SALES: 'sales',
+  MARKETING: 'marketing',
+  AUTOMATION: 'automation',
+  CUSTOM: 'custom'
+} as const;
+
+export type WorkflowCategory = (typeof WorkflowCategory)[keyof typeof WorkflowCategory];
 
 export interface WorkflowStats {
   totalExecutions: number;

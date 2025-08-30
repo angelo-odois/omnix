@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Node } from '@xyflow/react';
+import type { Node } from '@xyflow/react';
 import { X, Save } from 'lucide-react';
 import { 
   WorkflowNodeType, 

@@ -1,4 +1,5 @@
-import { WorkflowNode, WorkflowNodeType } from '../types/workflow';
+import type { WorkflowNode } from '../types/workflow';
+import { WorkflowNodeType } from '../types/workflow';
 
 export interface ValidationResult {
   isValid: boolean;

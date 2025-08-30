@@ -1,5 +1,5 @@
 import { AlertTriangle, CheckCircle, Info } from 'lucide-react';
-import { ValidationResult } from '../../utils/workflowValidation';
+import type { ValidationResult } from '../../utils/workflowValidation';
 
 interface WorkflowValidationPanelProps {
   validation: ValidationResult;
