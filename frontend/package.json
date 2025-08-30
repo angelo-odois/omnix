@@ -12,6 +12,7 @@
   "dependencies": {
     "@stripe/stripe-js": "^7.9.0",
     "@tanstack/react-query": "^5.85.5",
+    "@xyflow/react": "^12.8.4",
     "axios": "^1.11.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",

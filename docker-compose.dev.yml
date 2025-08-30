@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # Backend Development with hot reload
+  backend-dev:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: omnix-backend-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"  # Porta padrão para desenvolvimento
+    volumes:
+      - ./backend/src:/app/src  # Hot reload
+      - ./backend/package.json:/app/package.json
+      - ./backend/tsconfig.json:/app/tsconfig.json
+      - backend-dev-node-modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - JWT_SECRET=dev-jwt-secret-change-in-production
+      - FRONTEND_URL=http://localhost:5175
+      - BACKEND_URL=http://localhost:3000
+      # Email config (use Mailtrap ou similar para dev)
+      - SMTP_HOST=${SMTP_HOST:-smtp.mailtrap.io}
+      - SMTP_PORT=${SMTP_PORT:-2525}
+      - SMTP_USER=${SMTP_USER:-your-mailtrap-user}
+      - SMTP_PASS=${SMTP_PASS:-your-mailtrap-pass}
+      - EMAIL_FROM=${EMAIL_FROM:-noreply@omnix.local}
+      # Salvy API (sandbox)
+      - SALVY_API_URL=${SALVY_API_URL:-https://api.salvy.app}
+      - SALVY_API_KEY=${SALVY_API_KEY:-your-salvy-api-key}
+      - SALVY_TENANT_ID=${SALVY_TENANT_ID:-663e5833dc018c728e2a1493}
+      # WAHA API (local ou staging)
+      - WAHA_API_URL=${WAHA_API_URL:-https://waha.nexuso2.com}
+      - WAHA_API_KEY=${WAHA_API_KEY:-your-waha-api-key}
+      # Stripe (test mode)
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_your_key}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-whsec_test_your_secret}
+      - STRIPE_PRICE_ID_MONTHLY=${STRIPE_PRICE_ID_MONTHLY:-price_test_your_id}
+    networks:
+      - omnix-dev-network
+    command: npm run dev
+
+  # Frontend Development with hot reload
+  frontend-dev:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: omnix-frontend-dev
+    restart: unless-stopped
+    ports:
+      - "5175:5175"  # Porta padrão do Vite
+    volumes:
+      - ./frontend/src:/app/src  # Hot reload
+      - ./frontend/public:/app/public
+      - ./frontend/index.html:/app/index.html
+      - ./frontend/package.json:/app/package.json
+      - ./frontend/vite.config.ts:/app/vite.config.ts
+      - ./frontend/tailwind.config.js:/app/tailwind.config.js
+      - ./frontend/postcss.config.js:/app/postcss.config.js
+      - ./frontend/tsconfig.json:/app/tsconfig.json
+      - frontend-dev-node-modules:/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_BASE_URL=http://localhost:3000/api
+      - VITE_WEBHOOK_BASE_URL=http://localhost:3000
+    networks:
+      - omnix-dev-network
+    depends_on:
+      - backend-dev
+    command: npm run dev -- --host
+
+  # Optional: Local database for development
+  # postgres-dev:
+  #   image: postgres:15-alpine
+  #   container_name: omnix-postgres-dev
+  #   restart: unless-stopped
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     - POSTGRES_USER=omnix
+  #     - POSTGRES_PASSWORD=omnix_dev_pass
+  #     - POSTGRES_DB=omnix_dev
+  #   volumes:
+  #     - postgres-dev-data:/var/lib/postgresql/data
+  #   networks:
+  #     - omnix-dev-network
+
+  # Optional: Redis for sessions/cache
+  # redis-dev:
+  #   image: redis:7-alpine
+  #   container_name: omnix-redis-dev
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   networks:
+  #     - omnix-dev-network
+
+  # Optional: Mailhog for email testing
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: omnix-mailhog
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP port
+      - "8025:8025"  # Web UI
+    networks:
+      - omnix-dev-network
+
+networks:
+  omnix-dev-network:
+    driver: bridge
+
+volumes:
+  backend-dev-node-modules:
+  frontend-dev-node-modules:
+  # postgres-dev-data:

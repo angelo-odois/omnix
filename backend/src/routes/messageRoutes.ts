@@ -1,12 +1,12 @@
 import { Router, Request, Response } from 'express';
 import messageService from '../services/messageService';
 import wahaService from '../services/wahaService';
-import { authMiddleware, AuthRequest } from '../middlewares/auth';
+import { authenticate, AuthRequest } from '../middlewares/authV2';
 
 const router = Router();
 
 // Buscar todos os chats de uma sessão
-router.get('/messages/chats', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/messages/chats', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName } = req.query;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -42,7 +42,7 @@ router.get('/messages/chats', authMiddleware, async (req: AuthRequest, res: Resp
 });
 
 // Buscar mensagens de um chat específico
-router.get('/messages/chat/:contactId', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/messages/chat/:contactId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { contactId } = req.params;
     const { sessionName } = req.query;
@@ -83,7 +83,7 @@ router.get('/messages/chat/:contactId', authMiddleware, async (req: AuthRequest,
 });
 
 // Enviar mensagem
-router.post('/messages/send', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/messages/send', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName, chatId, text } = req.body;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -156,7 +156,7 @@ router.post('/messages/send', authMiddleware, async (req: AuthRequest, res: Resp
 });
 
 // Marcar mensagens como lidas
-router.post('/messages/mark-read', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/messages/mark-read', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName, chatId } = req.body;
     const tenantId = req.user?.tenantId || 'tenant-1';

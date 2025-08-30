@@ -4,7 +4,7 @@ import tenantNumbersService from '../services/tenantNumbersService';
 import messageService from '../services/messageService';
 import webhookService from '../services/webhookService';
 import { sessionPersistenceService } from '../services/sessionPersistenceService';
-import { authMiddleware, AuthRequest } from '../middlewares/auth';
+import { authenticate, AuthRequest } from '../middlewares/authV2';
 
 const router = Router();
 
@@ -57,7 +57,7 @@ async function syncExistingSessions(tenantId: string) {
 }
 
 // Listar sessões/instâncias do tenant
-router.get('/waha/instances', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/waha/instances', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId || 'tenant-1';
     
@@ -130,7 +130,7 @@ router.get('/waha/instances', authMiddleware, async (req: AuthRequest, res: Resp
 });
 
 // Listar sessões do tenant
-router.get('/waha/sessions', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/waha/sessions', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId || 'tenant-1';
     const sessions = await wahaService.getTenantSessions(tenantId);
@@ -149,7 +149,7 @@ router.get('/waha/sessions', authMiddleware, async (req: AuthRequest, res: Respo
 });
 
 // Obter detalhes de uma sessão
-router.get('/waha/sessions/:sessionName', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/waha/sessions/:sessionName', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName } = req.params;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -185,7 +185,7 @@ router.get('/waha/sessions/:sessionName', authMiddleware, async (req: AuthReques
 });
 
 // Obter número conectado da sessão
-router.get('/waha/sessions/:sessionName/connected-number', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/waha/sessions/:sessionName/connected-number', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName } = req.params;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -234,7 +234,7 @@ router.get('/waha/sessions/:sessionName/connected-number', authMiddleware, async
 });
 
 // Obter QR Code da sessão
-router.get('/waha/sessions/:sessionName/qr', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/waha/sessions/:sessionName/qr', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName } = req.params;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -260,7 +260,7 @@ router.get('/waha/sessions/:sessionName/qr', authMiddleware, async (req: AuthReq
 });
 
 // Gerar webhook para uma nova instância (antes de criar no WAHA)
-router.post('/waha/sessions/generate-webhook', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/waha/sessions/generate-webhook', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { displayName } = req.body;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -304,7 +304,7 @@ router.post('/waha/sessions/generate-webhook', authMiddleware, async (req: AuthR
 });
 
 // Criar sessão para número próprio
-router.post('/waha/sessions/own-number', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/waha/sessions/own-number', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { displayName } = req.body;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -385,7 +385,7 @@ router.post('/waha/sessions/own-number', authMiddleware, async (req: AuthRequest
 });
 
 // Reiniciar sessão
-router.post('/waha/sessions/:sessionName/restart', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/waha/sessions/:sessionName/restart', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName } = req.params;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -416,7 +416,7 @@ router.post('/waha/sessions/:sessionName/restart', authMiddleware, async (req: A
 });
 
 // Parar sessão
-router.post('/waha/sessions/:sessionName/stop', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/waha/sessions/:sessionName/stop', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName } = req.params;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -447,7 +447,7 @@ router.post('/waha/sessions/:sessionName/stop', authMiddleware, async (req: Auth
 });
 
 // Deletar sessão
-router.delete('/waha/sessions/:sessionName', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.delete('/waha/sessions/:sessionName', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionName } = req.params;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -657,7 +657,7 @@ router.post('/waha/webhook/:token', async (req: Request, res: Response) => {
 });
 
 // DEBUG: Listar todas as sessões (para desenvolvimento)
-router.get('/waha/debug/all-sessions', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/waha/debug/all-sessions', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId || 'tenant-1';
     

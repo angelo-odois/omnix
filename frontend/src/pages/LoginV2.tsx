@@ -334,7 +334,7 @@ export default function LoginV2() {
           <div className="space-y-2 text-xs">
             <div className="flex justify-between">
               <span className="text-gray-600">Super Admin:</span>
-              <span className="font-mono">admin@omnix.com.br / OmniX@2024</span>
+              <span className="font-mono">admin@omnix.dev / OmniX@2024</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Admin Tenant:</span>

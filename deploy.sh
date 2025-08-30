@@ -66,9 +66,9 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - JWT_SECRET=${JWT_SECRET}
-      - FRONTEND_URL=https://omnix.odois.com.br
-      - BACKEND_URL=https://api-omnix.odois.com.br
-      - WEBHOOK_URL=https://hook-omnix.odois.com.br
+      - FRONTEND_URL=https://omnix.odois.dev
+      - BACKEND_URL=https://api-omnix.odois.dev
+      - WEBHOOK_URL=https://hook-omnix.odois.dev
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
       - SMTP_USER=${SMTP_USER}
@@ -88,7 +88,7 @@ services:
       - "coolify.managed=true"
       - "coolify.type=application"
       - "coolify.name=omnix-backend"
-      - "coolify.domain=api-omnix.odois.com.br,hook-omnix.odois.com.br"
+      - "coolify.domain=api-omnix.odois.dev,hook-omnix.odois.dev"
       - "coolify.port=3001"
 
   frontend:
@@ -100,7 +100,7 @@ services:
       - "coolify.managed=true"
       - "coolify.type=application"
       - "coolify.name=omnix-frontend"
-      - "coolify.domain=omnix.odois.com.br"
+      - "coolify.domain=omnix.odois.dev"
       - "coolify.port=8080"
     depends_on:
       - backend
@@ -120,9 +120,9 @@ cat > deploy/README.md << 'EOF'
 1. Coolify installed and configured
 2. Docker registry credentials configured in Coolify
 3. DNS records configured:
-   - omnix.odois.com.br → Your server IP
-   - api-omnix.odois.com.br → Your server IP
-   - hook-omnix.odois.com.br → Your server IP
+   - omnix.odois.dev → Your server IP
+   - api-omnix.odois.dev → Your server IP
+   - hook-omnix.odois.dev → Your server IP
 
 ## Deployment Steps
 
@@ -140,9 +140,9 @@ Copy all variables from `.env` file to Coolify's environment variables section.
 2. Set the registry path in environment variables
 
 ### 4. Configure Domains
-1. Set `omnix.odois.com.br` for frontend
-2. Set `api-omnix.odois.com.br` for backend API
-3. Set `hook-omnix.odois.com.br` for webhooks
+1. Set `omnix.odois.dev` for frontend
+2. Set `api-omnix.odois.dev` for backend API
+3. Set `hook-omnix.odois.dev` for webhooks
 
 ### 5. Deploy
 1. Click "Deploy"
@@ -150,16 +150,16 @@ Copy all variables from `.env` file to Coolify's environment variables section.
 3. Wait for health checks to pass
 
 ### 6. Post-Deployment
-1. Test frontend at https://omnix.odois.com.br
-2. Test API at https://api-omnix.odois.com.br/health
-3. Configure WAHA webhooks to use https://hook-omnix.odois.com.br
+1. Test frontend at https://omnix.odois.dev
+2. Test API at https://api-omnix.odois.dev/health
+3. Configure WAHA webhooks to use https://hook-omnix.odois.dev
 
 ## SSL Certificates
 Coolify will automatically provision Let's Encrypt SSL certificates for all domains.
 
 ## Monitoring
-- Frontend health: https://omnix.odois.com.br/health
-- Backend health: https://api-omnix.odois.com.br/health
+- Frontend health: https://omnix.odois.dev/health
+- Backend health: https://api-omnix.odois.dev/health
 
 ## Troubleshooting
 1. Check Coolify logs

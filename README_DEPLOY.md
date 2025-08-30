@@ -4,9 +4,9 @@
 
 O OmniX está configurado para deploy com Docker em produção usando Coolify. O sistema utiliza 3 domínios:
 
-- **Frontend**: https://omnix.odois.com.br
-- **Backend API**: https://api-omnix.odois.com.br  
-- **Webhooks**: https://hook-omnix.odois.com.br
+- **Frontend**: https://omnix.odois.dev
+- **Backend API**: https://api-omnix.odois.dev  
+- **Webhooks**: https://hook-omnix.odois.dev
 
 ## 🏗️ Arquitetura
 
@@ -106,13 +106,13 @@ curl http://localhost:8080/health
        environment:
          # Copiar do arquivo docker-compose.yml
        labels:
-         - "coolify.domain=api-omnix.odois.com.br,hook-omnix.odois.com.br"
+         - "coolify.domain=api-omnix.odois.dev,hook-omnix.odois.dev"
          - "coolify.port=3001"
    
      frontend:
        image: ghcr.io/seu-usuario/omnix-frontend:latest
        labels:
-         - "coolify.domain=omnix.odois.com.br"
+         - "coolify.domain=omnix.odois.dev"
          - "coolify.port=8080"
    ```
 
@@ -129,25 +129,25 @@ curl http://localhost:8080/health
 Configure os seguintes registros DNS no seu provedor:
 
 ```
-omnix.odois.com.br        A    → IP_DO_SERVIDOR
-api-omnix.odois.com.br    A    → IP_DO_SERVIDOR  
-hook-omnix.odois.com.br   A    → IP_DO_SERVIDOR
+omnix.odois.dev        A    → IP_DO_SERVIDOR
+api-omnix.odois.dev    A    → IP_DO_SERVIDOR  
+hook-omnix.odois.dev   A    → IP_DO_SERVIDOR
 ```
 
 Ou usando CNAME se estiver atrás de um proxy:
 
 ```
-omnix.odois.com.br        CNAME → seu-servidor.com
-api-omnix.odois.com.br    CNAME → seu-servidor.com
-hook-omnix.odois.com.br   CNAME → seu-servidor.com
+omnix.odois.dev        CNAME → seu-servidor.com
+api-omnix.odois.dev    CNAME → seu-servidor.com
+hook-omnix.odois.dev   CNAME → seu-servidor.com
 ```
 
 ## 📊 Monitoramento
 
 ### Health Checks
 
-- Frontend: https://omnix.odois.com.br/health
-- Backend: https://api-omnix.odois.com.br/health
+- Frontend: https://omnix.odois.dev/health
+- Backend: https://api-omnix.odois.dev/health
 
 ### Logs
 
@@ -193,10 +193,10 @@ docker exec omnix-backend env
 
 ### Webhook não funciona
 
-1. Verifique a URL: https://hook-omnix.odois.com.br
+1. Verifique a URL: https://hook-omnix.odois.dev
 2. Teste manualmente:
    ```bash
-   curl -X POST https://hook-omnix.odois.com.br/test \
+   curl -X POST https://hook-omnix.odois.dev/test \
      -H "Content-Type: application/json" \
      -d '{"test": true}'
    ```
@@ -210,9 +210,9 @@ docker exec omnix-backend env
 
 | Serviço | Porta Local | Porta Docker | URL Produção |
 |---------|-------------|--------------|--------------|
-| Frontend | 5175 | 8080 | https://omnix.odois.com.br |
-| Backend | 3000 | 3001 | https://api-omnix.odois.com.br |
-| Webhook | 3000 | 3001 | https://hook-omnix.odois.com.br |
+| Frontend | 5175 | 8080 | https://omnix.odois.dev |
+| Backend | 3000 | 3001 | https://api-omnix.odois.dev |
+| Webhook | 3000 | 3001 | https://hook-omnix.odois.dev |
 
 ## 🔄 Atualizações
 

@@ -1,0 +1,140 @@
+version: '3.8'
+
+services:
+  backend:
+    image: omnix-backend:latest
+    container_name: omnix-backend-prod
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - JWT_SECRET=${JWT_SECRET}
+      - FRONTEND_URL=https://omnix.odois.dev
+      - BACKEND_URL=https://api-omnix.odois.dev
+      - WEBHOOK_URL=https://hook-omnix.odois.dev
+      # Email config
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - EMAIL_FROM=${EMAIL_FROM}
+      # Salvy API
+      - SALVY_API_URL=${SALVY_API_URL}
+      - SALVY_API_KEY=${SALVY_API_KEY}
+      - SALVY_TENANT_ID=${SALVY_TENANT_ID}
+      # WAHA API
+      - WAHA_API_URL=${WAHA_API_URL}
+      - WAHA_API_KEY=${WAHA_API_KEY}
+      # Stripe
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
+      - STRIPE_PRICE_ID_MONTHLY=${STRIPE_PRICE_ID_MONTHLY}
+      # Database (quando implementado)
+      # - DATABASE_URL=${DATABASE_URL}
+      # - REDIS_URL=${REDIS_URL}
+    networks:
+      - omnix-prod-network
+    labels:
+      # Labels para Traefik/Coolify
+      - "traefik.enable=true"
+      - "traefik.http.routers.omnix-api.rule=Host(`api-omnix.odois.dev`)"
+      - "traefik.http.routers.omnix-api.tls=true"
+      - "traefik.http.routers.omnix-api.tls.certresolver=letsencrypt"
+      - "traefik.http.services.omnix-api.loadbalancer.server.port=3001"
+      # Webhook routing
+      - "traefik.http.routers.omnix-webhook.rule=Host(`hook-omnix.odois.dev`)"
+      - "traefik.http.routers.omnix-webhook.tls=true"
+      - "traefik.http.routers.omnix-webhook.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.omnix-webhook.service=omnix-api"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    image: omnix-frontend:latest
+    container_name: omnix-frontend-prod
+    restart: always
+    ports:
+      - "8080:8080"
+    networks:
+      - omnix-prod-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.omnix-front.rule=Host(`omnix.odois.dev`)"
+      - "traefik.http.routers.omnix-front.tls=true"
+      - "traefik.http.routers.omnix-front.tls.certresolver=letsencrypt"
+      - "traefik.http.services.omnix-front.loadbalancer.server.port=8080"
+      # Security headers
+      - "traefik.http.middlewares.omnix-headers.headers.frameDeny=true"
+      - "traefik.http.middlewares.omnix-headers.headers.contentTypeNosniff=true"
+      - "traefik.http.middlewares.omnix-headers.headers.browserXssFilter=true"
+      - "traefik.http.routers.omnix-front.middlewares=omnix-headers"
+    depends_on:
+      - backend
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optional: PostgreSQL for production
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: omnix-postgres-prod
+  #   restart: always
+  #   environment:
+  #     - POSTGRES_USER=${DB_USER}
+  #     - POSTGRES_PASSWORD=${DB_PASSWORD}
+  #     - POSTGRES_DB=${DB_NAME}
+  #   volumes:
+  #     - postgres-prod-data:/var/lib/postgresql/data
+  #   networks:
+  #     - omnix-prod-network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # Optional: Redis for production
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: omnix-redis-prod
+  #   restart: always
+  #   command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+  #   volumes:
+  #     - redis-prod-data:/data
+  #   networks:
+  #     - omnix-prod-network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+networks:
+  omnix-prod-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  # postgres-prod-data:
+  # redis-prod-data:

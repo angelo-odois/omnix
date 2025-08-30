@@ -157,7 +157,7 @@ class AuthServiceV2 {
       // Super Admin OmniX
       {
         id: 'super-1',
-        email: 'admin@omnix.com.br',
+        email: 'admin@omnix.dev',
         name: 'Super Admin OmniX',
         password: bcrypt.hashSync('OmniX@2024', 10),
         role: UserRole.SUPER_ADMIN,
@@ -230,13 +230,13 @@ class AuthServiceV2 {
 
     users.forEach(user => this.users.set(user.id, user));
 
-    console.log('AuthServiceV2 initialized');
+    console.log('\n=== AUTHSERVICE V2 INITIALIZED ===');
     console.log('Tenants:', Array.from(this.tenants.values()).map(t => t.name));
-    console.log('Users:', Array.from(this.users.values()).map(u => ({
-      email: u.email,
-      role: u.role,
-      tenant: u.tenantId ? this.tenants.get(u.tenantId)?.name : 'OmniX',
-    })));
+    console.log('\nAvailable Users:');
+    Array.from(this.users.values()).forEach(u => {
+      console.log(`- ${u.email} | ${u.role} | Tenant: ${u.tenantId ? this.tenants.get(u.tenantId)?.name : 'OmniX'} | Active: ${u.isActive}`);
+    });
+    console.log('===================================\n');
   }
 
   // ============= AUTENTICAÇÃO =============

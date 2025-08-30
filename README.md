@@ -99,9 +99,9 @@ docker-compose up -d
 Consulte [README_DEPLOY.md](README_DEPLOY.md) para instruções detalhadas de deploy com Coolify.
 
 ### URLs de Produção
-- Frontend: https://omnix.odois.com.br
-- API: https://api-omnix.odois.com.br
-- Webhooks: https://hook-omnix.odois.com.br
+- Frontend: https://omnix.odois.dev
+- API: https://api-omnix.odois.dev
+- Webhooks: https://hook-omnix.odois.dev
 
 ## 🔐 Funcionalidades
 

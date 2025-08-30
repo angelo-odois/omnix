@@ -8,14 +8,14 @@ services:
     container_name: omnix-backend
     restart: unless-stopped
     ports:
-      - "3001:3001"
+      - "8301:8301"
     environment:
       - NODE_ENV=production
-      - PORT=3001
+      - PORT=8301
       - JWT_SECRET=${JWT_SECRET}
-      - FRONTEND_URL=https://omnix.odois.com.br
-      - BACKEND_URL=https://api-omnix.odois.com.br
-      - WEBHOOK_URL=https://hook-omnix.odois.com.br
+      - FRONTEND_URL=https://omnix.odois.dev
+      - BACKEND_URL=https://api-omnix.odois.dev
+      - WEBHOOK_URL=https://hook-omnix.odois.dev
       # Email config
       - SMTP_HOST=${SMTP_HOST}
       - SMTP_PORT=${SMTP_PORT}
@@ -37,12 +37,12 @@ services:
       - omnix-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.omnix-api.rule=Host(`api-omnix.odois.com.br`)"
+      - "traefik.http.routers.omnix-api.rule=Host(`api-omnix.odois.dev`)"
       - "traefik.http.routers.omnix-api.tls=true"
       - "traefik.http.routers.omnix-api.tls.certresolver=letsencrypt"
-      - "traefik.http.services.omnix-api.loadbalancer.server.port=3001"
+      - "traefik.http.services.omnix-api.loadbalancer.server.port=8301"
       # Webhook subdomain routing
-      - "traefik.http.routers.omnix-webhook.rule=Host(`hook-omnix.odois.com.br`)"
+      - "traefik.http.routers.omnix-webhook.rule=Host(`hook-omnix.odois.dev`)"
       - "traefik.http.routers.omnix-webhook.tls=true"
       - "traefik.http.routers.omnix-webhook.tls.certresolver=letsencrypt"
       - "traefik.http.routers.omnix-webhook.service=omnix-api"
@@ -50,7 +50,7 @@ services:
       - "traefik.http.middlewares.webhook-path.replacepathregex.regex=^/(.*)"
       - "traefik.http.middlewares.webhook-path.replacepathregex.replacement=/api/waha/webhook/$$1"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8301/health"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -61,24 +61,24 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        - VITE_API_BASE_URL=https://api-omnix.odois.com.br/api
-        - VITE_WEBHOOK_BASE_URL=https://hook-omnix.odois.com.br
+        - VITE_API_BASE_URL=https://api-omnix.odois.dev/api
+        - VITE_WEBHOOK_BASE_URL=https://hook-omnix.odois.dev
     container_name: omnix-frontend
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - "8580:8580"
     networks:
       - omnix-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.omnix-front.rule=Host(`omnix.odois.com.br`)"
+      - "traefik.http.routers.omnix-front.rule=Host(`omnix.odois.dev`)"
       - "traefik.http.routers.omnix-front.tls=true"
       - "traefik.http.routers.omnix-front.tls.certresolver=letsencrypt"
-      - "traefik.http.services.omnix-front.loadbalancer.server.port=8080"
+      - "traefik.http.services.omnix-front.loadbalancer.server.port=8580"
     depends_on:
       - backend
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8580/health"]
       interval: 30s
       timeout: 10s
       retries: 3

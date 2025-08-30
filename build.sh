@@ -37,8 +37,8 @@ cd ..
 echo -e "${YELLOW}📦 Building Frontend...${NC}"
 cd frontend
 docker build \
-    --build-arg VITE_API_BASE_URL=https://api-omnix.odois.com.br/api \
-    --build-arg VITE_WEBHOOK_BASE_URL=https://hook-omnix.odois.com.br \
+    --build-arg VITE_API_BASE_URL=https://api-omnix.odois.dev/api \
+    --build-arg VITE_WEBHOOK_BASE_URL=https://hook-omnix.odois.dev \
     -t omnix-frontend:latest .
 if [ $? -eq 0 ]; then
     echo -e "${GREEN}✅ Frontend built successfully${NC}"

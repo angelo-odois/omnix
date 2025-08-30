@@ -1,11 +1,11 @@
 import { Router, Request, Response } from 'express';
 import salvyService from '../services/salvyService';
-import { authMiddleware, AuthRequest } from '../middlewares/auth';
+import { authenticate, AuthRequest } from '../middlewares/authV2';
 
 const router = Router();
 
 // Buscar números disponíveis
-router.get('/salvy/numbers/search', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/salvy/numbers/search', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { country, areaCode, contains, type, limit } = req.query;
 
@@ -31,7 +31,7 @@ router.get('/salvy/numbers/search', authMiddleware, async (req: AuthRequest, res
 });
 
 // Comprar número
-router.post('/salvy/numbers/purchase', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/salvy/numbers/purchase', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { numberId, alias } = req.body;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -64,7 +64,7 @@ router.post('/salvy/numbers/purchase', authMiddleware, async (req: AuthRequest, 
 });
 
 // Listar números do tenant
-router.get('/salvy/numbers/owned', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/salvy/numbers/owned', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId || 'tenant-1';
     
@@ -107,7 +107,7 @@ router.get('/salvy/numbers/owned', authMiddleware, async (req: AuthRequest, res:
 });
 
 // Solicitar portabilidade
-router.post('/salvy/portability/request', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/salvy/portability/request', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { currentNumber, currentCarrier, ownerDocument } = req.body;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -137,7 +137,7 @@ router.post('/salvy/portability/request', authMiddleware, async (req: AuthReques
 });
 
 // Status da portabilidade
-router.get('/salvy/portability/status/:requestId', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/salvy/portability/status/:requestId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { requestId } = req.params;
     const status = await salvyService.checkPortabilityStatus(requestId);
@@ -155,7 +155,7 @@ router.get('/salvy/portability/status/:requestId', authMiddleware, async (req: A
 });
 
 // Cancelar número
-router.delete('/salvy/numbers/:numberId', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.delete('/salvy/numbers/:numberId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { numberId } = req.params;
     const tenantId = req.user?.tenantId || 'tenant-1';
@@ -191,7 +191,7 @@ router.delete('/salvy/numbers/:numberId', authMiddleware, async (req: AuthReques
 });
 
 // Criar número virtual após confirmação de pagamento
-router.post('/salvy/numbers/create', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/salvy/numbers/create', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { areaCode, redirectNumber, displayName } = req.body;
     const tenantId = req.user?.tenantId || 'tenant-1';

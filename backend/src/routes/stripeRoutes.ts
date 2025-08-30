@@ -4,12 +4,12 @@ import salvyService from '../services/salvyService';
 import pendingRequestsService from '../services/pendingRequestsService';
 import tenantNumbersService from '../services/tenantNumbersService';
 import wahaService from '../services/wahaService';
-import { authMiddleware, AuthRequest } from '../middlewares/auth';
+import { authenticate, AuthRequest } from '../middlewares/authV2';
 
 const router = Router();
 
 // Criar sessão de checkout
-router.post('/stripe/create-checkout-session', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/stripe/create-checkout-session', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { areaCode, redirectNumber, displayName, mode = 'payment', requestId } = req.body;
     const userId = req.user?.id || '';
@@ -94,7 +94,7 @@ router.post('/stripe/create-checkout-session', authMiddleware, async (req: AuthR
 });
 
 // Verificar status da sessão
-router.get('/stripe/session/:sessionId', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/stripe/session/:sessionId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { sessionId } = req.params;
     const result = await stripeService.retrieveSession(sessionId);
@@ -218,7 +218,7 @@ router.post('/stripe/webhook', async (req: Request, res: Response) => {
 });
 
 // Cancelar assinatura
-router.post('/stripe/cancel-subscription', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.post('/stripe/cancel-subscription', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { subscriptionId } = req.body;
     
@@ -246,7 +246,7 @@ router.post('/stripe/cancel-subscription', authMiddleware, async (req: AuthReque
 });
 
 // Listar solicitações pendentes do usuário
-router.get('/stripe/pending-requests', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.get('/stripe/pending-requests', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id || '';
     const requests = pendingRequestsService.getUserPendingRequests(userId);
@@ -265,7 +265,7 @@ router.get('/stripe/pending-requests', authMiddleware, async (req: AuthRequest, 
 });
 
 // Cancelar solicitação pendente
-router.delete('/stripe/pending-requests/:requestId', authMiddleware, async (req: AuthRequest, res: Response) => {
+router.delete('/stripe/pending-requests/:requestId', authenticate, async (req: AuthRequest, res: Response) => {
   try {
     const { requestId } = req.params;
     const userId = req.user?.id || '';

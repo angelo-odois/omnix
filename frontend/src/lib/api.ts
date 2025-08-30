@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8300/api';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -40,11 +40,13 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       console.error('401 Error:', error.config?.url);
       
-      // Não fazer logout se for uma rota de autenticação
+      // Não fazer logout se for uma rota de autenticação ou se já estiver na página de login
       const authRoutes = ['/auth/', '/v2/auth/'];
       const isAuthRoute = authRoutes.some(route => error.config?.url?.includes(route));
+      const isOnLoginPage = window.location.pathname.includes('/login');
       
-      if (!isAuthRoute) {
+      if (!isAuthRoute && !isOnLoginPage) {
+        console.log('Unauthorized access, redirecting to login');
         useAuthStore.getState().logout();
         window.location.href = '/loginv2';
       }

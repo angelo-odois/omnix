@@ -9,6 +9,7 @@ import AcceptInvite from './pages/AcceptInvite';
 import Dashboard from './pages/Dashboard';
 import Instances from './pages/Instances';
 import Chat from './pages/Chat';
+import Workflows from './pages/Workflows';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,7 +48,7 @@ function App() {
             <Route path="instances" element={<Instances />} />
             <Route path="workflows" element={
               <ProtectedRoute roles={['super_admin', 'tenant_admin', 'tenant_manager']}>
-                <div className="text-2xl">Workflows</div>
+                <Workflows />
               </ProtectedRoute>
             } />
             <Route path="settings" element={

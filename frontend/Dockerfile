@@ -13,8 +13,8 @@ RUN npm ci
 COPY . .
 
 # Set build-time environment variables
-ARG VITE_API_BASE_URL=https://api-omnix.odois.com.br/api
-ARG VITE_WEBHOOK_BASE_URL=https://hook-omnix.odois.com.br
+ARG VITE_API_BASE_URL=https://api-omnix.odois.dev/api
+ARG VITE_WEBHOOK_BASE_URL=https://hook-omnix.odois.dev
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 ENV VITE_WEBHOOK_BASE_URL=$VITE_WEBHOOK_BASE_URL
 
