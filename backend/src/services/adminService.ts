@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
-import { Package, TenantAdmin, Permission, Role, AdminStats, PackageFeature, PackageLimits, TenantUsage, TenantSettings } from '../types/admin';
+import { Package, TenantAdmin, Permission, Role, AdminStats, PackageFeature, PackageLimits, TenantUsage, TenantSettings, PackageModule } from '../types/admin';
+import { SYSTEM_MODULES } from '../types/modules';
 
 class AdminService {
   private packages: Map<string, Package> = new Map();
@@ -37,6 +38,17 @@ class AdminService {
           maxIntegrations: 2,
           storageGB: 1,
         },
+        modules: [
+          { moduleId: SYSTEM_MODULES.MESSAGES, included: true },
+          { moduleId: SYSTEM_MODULES.CONTACTS, included: true },
+          { moduleId: SYSTEM_MODULES.WHATSAPP, included: true, limits: { maxInstances: 2 } },
+          { moduleId: SYSTEM_MODULES.WORKFLOWS, included: true, limits: { customLimits: { maxWorkflows: 5 } } },
+          { moduleId: SYSTEM_MODULES.WEBHOOKS, included: false },
+          { moduleId: SYSTEM_MODULES.API, included: false },
+          { moduleId: SYSTEM_MODULES.ANALYTICS, included: false },
+          { moduleId: SYSTEM_MODULES.SALVY, included: false },
+          { moduleId: SYSTEM_MODULES.STRIPE, included: false },
+        ],
         isActive: true,
         isPopular: false,
         createdAt: new Date(),
@@ -67,6 +79,17 @@ class AdminService {
           maxIntegrations: 10,
           storageGB: 5,
         },
+        modules: [
+          { moduleId: SYSTEM_MODULES.MESSAGES, included: true },
+          { moduleId: SYSTEM_MODULES.CONTACTS, included: true },
+          { moduleId: SYSTEM_MODULES.WHATSAPP, included: true, limits: { maxInstances: 5 } },
+          { moduleId: SYSTEM_MODULES.WORKFLOWS, included: true, limits: { customLimits: { maxWorkflows: 20 } } },
+          { moduleId: SYSTEM_MODULES.WEBHOOKS, included: true, limits: { customLimits: { maxWebhooks: 10 } } },
+          { moduleId: SYSTEM_MODULES.API, included: true, limits: { maxRequests: 50000 } },
+          { moduleId: SYSTEM_MODULES.ANALYTICS, included: true },
+          { moduleId: SYSTEM_MODULES.SALVY, included: false },
+          { moduleId: SYSTEM_MODULES.STRIPE, included: false },
+        ],
         isActive: true,
         isPopular: true,
         createdAt: new Date(),
@@ -99,6 +122,17 @@ class AdminService {
           maxIntegrations: -1,
           storageGB: 50,
         },
+        modules: [
+          { moduleId: SYSTEM_MODULES.MESSAGES, included: true },
+          { moduleId: SYSTEM_MODULES.CONTACTS, included: true },
+          { moduleId: SYSTEM_MODULES.WHATSAPP, included: true, limits: { maxInstances: -1 } },
+          { moduleId: SYSTEM_MODULES.WORKFLOWS, included: true, limits: { customLimits: { maxWorkflows: -1 } } },
+          { moduleId: SYSTEM_MODULES.WEBHOOKS, included: true, limits: { customLimits: { maxWebhooks: -1 } } },
+          { moduleId: SYSTEM_MODULES.API, included: true, limits: { maxRequests: -1 } },
+          { moduleId: SYSTEM_MODULES.ANALYTICS, included: true },
+          { moduleId: SYSTEM_MODULES.SALVY, included: true, limits: { maxRequests: -1 } },
+          { moduleId: SYSTEM_MODULES.STRIPE, included: true },
+        ],
         isActive: true,
         isPopular: false,
         createdAt: new Date(),
@@ -245,6 +279,17 @@ class AdminService {
     };
 
     this.tenantsAdmin.set(newTenant.id, newTenant);
+
+    // Setup automático dos módulos baseado no pacote
+    try {
+      const { moduleService } = await import('./moduleService');
+      await moduleService.setupTenantModulesFromPackage(newTenant.id, packageId, createdBy);
+      console.log(`Modules auto-configured for tenant ${newTenant.id} with package ${packageId}`);
+    } catch (error) {
+      console.error(`Failed to setup modules for tenant ${newTenant.id}:`, error);
+      // Não falha a criação do tenant se os módulos falharem
+    }
+
     return newTenant;
   }
 
@@ -270,6 +315,108 @@ class AdminService {
 
     this.tenantsAdmin.set(id, updatedTenant);
     return updatedTenant;
+  }
+
+  async changeTenantPlan(tenantId: string, newPackageId: string, changedBy: string): Promise<{
+    success: boolean;
+    tenant?: TenantAdmin;
+    modulesChanged?: {
+      activated: string[];
+      deactivated: string[];
+      updated: string[];
+    };
+    message?: string;
+  }> {
+    try {
+      const tenant = this.tenantsAdmin.get(tenantId);
+      if (!tenant) {
+        return { success: false, message: 'Tenant não encontrado' };
+      }
+
+      const oldPackage = this.packages.get(tenant.packageId);
+      const newPackage = this.packages.get(newPackageId);
+      
+      if (!newPackage) {
+        return { success: false, message: 'Novo pacote não encontrado' };
+      }
+
+      // Import moduleService dinamicamente para evitar dependência circular
+      const { moduleService } = await import('./moduleService');
+
+      // Comparar módulos dos pacotes
+      const oldModuleIds = oldPackage ? new Set(oldPackage.modules.filter(m => m.included).map(m => m.moduleId)) : new Set();
+      const newModuleIds = new Set(newPackage.modules.filter(m => m.included).map(m => m.moduleId));
+      
+      const toActivate = Array.from(newModuleIds).filter(id => !oldModuleIds.has(id));
+      const toDeactivate = Array.from(oldModuleIds).filter(id => !newModuleIds.has(id));
+      const toUpdate = Array.from(newModuleIds).filter(id => oldModuleIds.has(id));
+
+      // Ativar novos módulos
+      const activatedModules: string[] = [];
+      for (const moduleId of toActivate) {
+        try {
+          const moduleConfig = newPackage.modules.find(m => m.moduleId === moduleId);
+          await moduleService.enableModuleForTenant(tenantId, moduleId, moduleConfig?.limits || {}, changedBy);
+          activatedModules.push(moduleId);
+        } catch (error) {
+          console.error(`Failed to activate module ${moduleId}:`, error);
+        }
+      }
+
+      // Desativar módulos removidos
+      const deactivatedModules: string[] = [];
+      for (const moduleId of toDeactivate) {
+        try {
+          // Verificar se não é um módulo core antes de desativar
+          const module = await moduleService.getModuleById(moduleId);
+          if (module && !module.isCore) {
+            await moduleService.disableModuleForTenant(tenantId, moduleId, changedBy);
+            deactivatedModules.push(moduleId);
+          }
+        } catch (error) {
+          console.error(`Failed to deactivate module ${moduleId}:`, error);
+        }
+      }
+
+      // Atualizar configurações dos módulos existentes
+      const updatedModules: string[] = [];
+      for (const moduleId of toUpdate) {
+        try {
+          const moduleConfig = newPackage.modules.find(m => m.moduleId === moduleId);
+          if (moduleConfig?.limits) {
+            await moduleService.updateTenantModuleConfig(tenantId, moduleId, moduleConfig.limits);
+            updatedModules.push(moduleId);
+          }
+        } catch (error) {
+          console.error(`Failed to update module ${moduleId}:`, error);
+        }
+      }
+
+      // Atualizar tenant
+      const updatedTenant = await this.updateTenant(tenantId, { 
+        packageId: newPackageId,
+        updatedAt: new Date()
+      });
+
+      console.log(`Tenant ${tenantId} plan changed from ${tenant.packageId} to ${newPackageId} by ${changedBy}`);
+
+      return {
+        success: true,
+        tenant: updatedTenant!,
+        modulesChanged: {
+          activated: activatedModules,
+          deactivated: deactivatedModules,
+          updated: updatedModules
+        }
+      };
+
+    } catch (error: any) {
+      console.error('Error changing tenant plan:', error);
+      return { 
+        success: false, 
+        message: error.message || 'Erro ao alterar plano do tenant' 
+      };
+    }
   }
 
   async suspendTenant(id: string): Promise<boolean> {

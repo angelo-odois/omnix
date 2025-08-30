@@ -5,6 +5,7 @@ import PackageManagement from '../components/admin/PackageManagement';
 import TenantManagement from '../components/admin/TenantManagement';
 import UserManagement from '../components/admin/UserManagement';
 import DashboardStats from '../components/admin/DashboardStats';
+import ModuleManagement from '../components/admin/ModuleManagement';
 
 export default function AdminDashboard() {
   const { user } = useAuthStore();
@@ -44,6 +45,7 @@ export default function AdminDashboard() {
 
   const tabs = [
     { id: 'dashboard', name: 'Dashboard', icon: '📊' },
+    { id: 'modules', name: 'Módulos', icon: '🧩' },
     { id: 'packages', name: 'Pacotes', icon: '📦' },
     { id: 'tenants', name: 'Tenants', icon: '🏢' },
     { id: 'users', name: 'Usuários', icon: '👥' },
@@ -53,6 +55,8 @@ export default function AdminDashboard() {
     switch (activeTab) {
       case 'dashboard':
         return <DashboardStats />;
+      case 'modules':
+        return <ModuleManagement />;
       case 'packages':
         return <PackageManagement />;
       case 'tenants':

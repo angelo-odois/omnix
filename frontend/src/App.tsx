@@ -10,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import Instances from './pages/Instances';
 import Chat from './pages/Chat';
 import Workflows from './pages/Workflows';
+import AdminDashboard from './pages/AdminDashboard';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,6 +58,13 @@ function App() {
               </ProtectedRoute>
             } />
           </Route>
+
+          {/* Admin Dashboard - Separate from main layout */}
+          <Route path="/admin" element={
+            <ProtectedRoute roles={['super_admin']}>
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
 
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

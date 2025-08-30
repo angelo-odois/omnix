@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminService, TenantAdmin, Package } from '../../services/adminService';
+import TenantPlanManager from './TenantPlanManager';
 
 export default function TenantManagement() {
   const [tenants, setTenants] = useState<TenantAdmin[]>([]);
@@ -7,6 +8,7 @@ export default function TenantManagement() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [selectedTenantForPlan, setSelectedTenantForPlan] = useState<TenantAdmin | null>(null);
 
   useEffect(() => {
     loadData();
@@ -46,6 +48,14 @@ export default function TenantManagement() {
     } catch (err: any) {
       alert('Erro ao ativar tenant: ' + err.message);
     }
+  };
+
+  const handlePlanChanged = (updatedTenant: TenantAdmin, modulesChanged: any) => {
+    // Atualizar a lista de tenants
+    setTenants(prev => prev.map(t => t.id === updatedTenant.id ? updatedTenant : t));
+    
+    // Mostrar notificação de sucesso
+    alert(`Plano alterado com sucesso!\n\n📦 Módulos ativados: ${modulesChanged.activated.length}\n🔄 Módulos atualizados: ${modulesChanged.updated.length}\n❌ Módulos desativados: ${modulesChanged.deactivated.length}`);
   };
 
   const getStatusColor = (status: string) => {
@@ -187,6 +197,12 @@ export default function TenantManagement() {
                         ✅ Ativar
                       </button>
                     )}
+                    <button
+                      onClick={() => setSelectedTenantForPlan(tenant)}
+                      className="px-3 py-1 bg-purple-50 text-purple-600 rounded text-sm font-medium hover:bg-purple-100"
+                    >
+                      🔄 Alterar Plano
+                    </button>
                     <button className="px-3 py-1 bg-blue-50 text-blue-600 rounded text-sm font-medium hover:bg-blue-100">
                       ✏️ Editar
                     </button>
@@ -233,6 +249,15 @@ export default function TenantManagement() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Plan Manager Modal */}
+      {selectedTenantForPlan && (
+        <TenantPlanManager
+          tenant={selectedTenantForPlan}
+          onPlanChanged={handlePlanChanged}
+          onClose={() => setSelectedTenantForPlan(null)}
+        />
       )}
     </div>
   );

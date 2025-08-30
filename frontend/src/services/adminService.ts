@@ -197,6 +197,11 @@ class AdminService {
     await api.post(`/admin/tenants/${id}/activate`);
   }
 
+  async changeTenantPlan(id: string, packageId: string): Promise<any> {
+    const response = await api.post(`/admin/tenants/${id}/change-plan`, { packageId });
+    return response.data.data;
+  }
+
   // User Management
   async getUsers(): Promise<User[]> {
     const response = await api.get('/admin/users');
@@ -211,6 +216,47 @@ class AdminService {
 
   async getRoles(): Promise<any[]> {
     const response = await api.get('/admin/roles');
+    return response.data.data;
+  }
+
+  // Module Management
+  async getModules(): Promise<any[]> {
+    const response = await api.get('/admin/modules');
+    return response.data.data;
+  }
+
+  async getModule(id: string): Promise<any> {
+    const response = await api.get(`/admin/modules/${id}`);
+    return response.data.data;
+  }
+
+  async getModulesByCategory(category: string): Promise<any[]> {
+    const response = await api.get(`/admin/modules/category/${category}`);
+    return response.data.data;
+  }
+
+  async getModuleStats(): Promise<any> {
+    const response = await api.get('/admin/modules/stats');
+    return response.data.data;
+  }
+
+  // Tenant Module Management
+  async getTenantModules(tenantId: string): Promise<any[]> {
+    const response = await api.get(`/admin/tenants/${tenantId}/modules`);
+    return response.data.data;
+  }
+
+  async enableModuleForTenant(tenantId: string, moduleId: string, config?: any): Promise<any> {
+    const response = await api.post(`/admin/tenants/${tenantId}/modules/${moduleId}/enable`, { config });
+    return response.data.data;
+  }
+
+  async disableModuleForTenant(tenantId: string, moduleId: string): Promise<void> {
+    await api.post(`/admin/tenants/${tenantId}/modules/${moduleId}/disable`);
+  }
+
+  async validateModuleDependencies(tenantId: string, moduleId: string): Promise<any> {
+    const response = await api.get(`/admin/tenants/${tenantId}/modules/${moduleId}/validate`);
     return response.data.data;
   }
 }

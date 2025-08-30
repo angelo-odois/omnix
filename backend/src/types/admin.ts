@@ -7,6 +7,7 @@ export interface Package {
   billingInterval: 'monthly' | 'yearly';
   features: PackageFeature[];
   limits: PackageLimits;
+  modules: PackageModule[]; // Available modules in this package
   isActive: boolean;
   isPopular: boolean;
   stripeProductId?: string;
@@ -32,6 +33,17 @@ export interface PackageLimits {
   maxWorkflows: number;
   maxIntegrations: number;
   storageGB: number;
+}
+
+export interface PackageModule {
+  moduleId: string;
+  included: boolean;
+  limits?: {
+    maxInstances?: number;
+    maxUsers?: number;
+    maxRequests?: number;
+    customLimits?: Record<string, any>;
+  };
 }
 
 export interface TenantAdmin {

@@ -2,6 +2,7 @@ import { Router, Response } from 'express';
 import { authenticate, AuthRequest } from '../middlewares/authV2';
 import { requireSuperAdmin, requireAdminAccess } from '../middlewares/adminAuth';
 import { adminService } from '../services/adminService';
+import { moduleService } from '../services/moduleService';
 import { authServiceV2, UserRole } from '../services/authServiceV2';
 
 const router = Router();
@@ -372,6 +373,45 @@ router.post('/tenants/:id/activate', async (req: AuthRequest, res: Response) => 
   }
 });
 
+// Alterar plano do tenant
+router.post('/tenants/:id/change-plan', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { packageId } = req.body;
+    
+    if (!packageId) {
+      return res.status(400).json({
+        success: false,
+        message: 'packageId é obrigatório'
+      });
+    }
+    
+    const result = await adminService.changeTenantPlan(id, packageId, req.user!.id);
+    
+    if (!result.success) {
+      return res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        tenant: result.tenant,
+        modulesChanged: result.modulesChanged
+      },
+      message: 'Plano alterado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error changing tenant plan:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao alterar plano do tenant'
+    });
+  }
+});
+
 // ============= USER MANAGEMENT =============
 
 // Listar todos os usuários do sistema
@@ -436,6 +476,374 @@ router.get('/roles', async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'Erro ao buscar roles'
+    });
+  }
+});
+
+// ============= MODULE MANAGEMENT =============
+
+// Listar todos os módulos do sistema
+router.get('/modules', async (req: AuthRequest, res: Response) => {
+  try {
+    const modules = await moduleService.getAllModules();
+    
+    res.json({
+      success: true,
+      data: modules
+    });
+  } catch (error: any) {
+    console.error('Error fetching modules:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar módulos'
+    });
+  }
+});
+
+// Estatísticas de módulos (deve vir antes de /modules/:id)
+router.get('/modules/stats', async (req: AuthRequest, res: Response) => {
+  try {
+    const stats = await moduleService.getModuleStats();
+    
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error: any) {
+    console.error('Error fetching module stats:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar estatísticas de módulos'
+    });
+  }
+});
+
+// Listar módulos por categoria
+router.get('/modules/category/:category', async (req: AuthRequest, res: Response) => {
+  try {
+    const { category } = req.params;
+    const modules = await moduleService.getModulesByCategory(category);
+    
+    res.json({
+      success: true,
+      data: modules
+    });
+  } catch (error: any) {
+    console.error('Error fetching modules by category:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar módulos por categoria'
+    });
+  }
+});
+
+// Buscar módulo específico (deve vir por último)
+router.get('/modules/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const module = await moduleService.getModuleById(id);
+    
+    if (!module) {
+      return res.status(404).json({
+        success: false,
+        message: 'Módulo não encontrado'
+      });
+    }
+
+    res.json({
+      success: true,
+      data: module
+    });
+  } catch (error: any) {
+    console.error('Error fetching module:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar módulo'
+    });
+  }
+});
+
+// ============= TENANT MODULE MANAGEMENT =============
+
+// Listar módulos de um tenant
+router.get('/tenants/:tenantId/modules', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId } = req.params;
+    const tenantModules = await moduleService.getTenantModules(tenantId);
+    
+    res.json({
+      success: true,
+      data: tenantModules
+    });
+  } catch (error: any) {
+    console.error('Error fetching tenant modules:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar módulos do tenant'
+    });
+  }
+});
+
+// Ativar módulo para um tenant
+router.post('/tenants/:tenantId/modules/:moduleId/enable', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId, moduleId } = req.params;
+    const { config } = req.body;
+    
+    const tenantModule = await moduleService.enableModuleForTenant(
+      tenantId, 
+      moduleId, 
+      config, 
+      req.user!.id
+    );
+    
+    res.json({
+      success: true,
+      data: tenantModule,
+      message: 'Módulo ativado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error enabling module for tenant:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao ativar módulo'
+    });
+  }
+});
+
+// Desativar módulo para um tenant
+router.post('/tenants/:tenantId/modules/:moduleId/disable', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId, moduleId } = req.params;
+    
+    const success = await moduleService.disableModuleForTenant(
+      tenantId, 
+      moduleId, 
+      req.user!.id
+    );
+    
+    if (!success) {
+      return res.status(404).json({
+        success: false,
+        message: 'Módulo ou configuração não encontrada'
+      });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Módulo desativado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error disabling module for tenant:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao desativar módulo'
+    });
+  }
+});
+
+// Validar dependências de módulo
+router.get('/tenants/:tenantId/modules/:moduleId/validate', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId, moduleId } = req.params;
+    
+    const validation = await moduleService.validateModuleDependencies(moduleId, tenantId);
+    
+    res.json({
+      success: true,
+      data: validation
+    });
+  } catch (error: any) {
+    console.error('Error validating module dependencies:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao validar dependências do módulo'
+    });
+  }
+});
+
+// ============= MODULE ACTIVATION SYSTEM =============
+
+// Setup de módulos baseado no pacote do tenant
+router.post('/tenants/:tenantId/modules/setup-from-package', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId } = req.params;
+    const { packageId } = req.body;
+    
+    if (!packageId) {
+      return res.status(400).json({
+        success: false,
+        message: 'packageId é obrigatório'
+      });
+    }
+    
+    await moduleService.setupTenantModulesFromPackage(tenantId, packageId, req.user!.id);
+    
+    res.json({
+      success: true,
+      message: 'Módulos do pacote configurados com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error setting up tenant modules from package:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao configurar módulos do pacote'
+    });
+  }
+});
+
+// Buscar módulos disponíveis para o tenant
+router.get('/tenants/:tenantId/modules/available', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId } = req.params;
+    
+    const availableModules = await moduleService.getAvailableModulesForTenant(tenantId);
+    
+    res.json({
+      success: true,
+      data: availableModules
+    });
+  } catch (error: any) {
+    console.error('Error fetching available modules for tenant:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar módulos disponíveis'
+    });
+  }
+});
+
+// Ativação em massa de módulos
+router.post('/tenants/:tenantId/modules/bulk-enable', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId } = req.params;
+    const { moduleIds } = req.body;
+    
+    if (!Array.isArray(moduleIds) || moduleIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'moduleIds deve ser um array não vazio'
+      });
+    }
+    
+    const results = await moduleService.bulkEnableModules(tenantId, moduleIds, req.user!.id);
+    
+    res.json({
+      success: true,
+      data: results,
+      message: `${results.success.length} módulos ativados, ${results.failed.length} falharam`
+    });
+  } catch (error: any) {
+    console.error('Error bulk enabling modules:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao ativar módulos em massa'
+    });
+  }
+});
+
+// Desativação em massa de módulos  
+router.post('/tenants/:tenantId/modules/bulk-disable', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId } = req.params;
+    const { moduleIds } = req.body;
+    
+    if (!Array.isArray(moduleIds) || moduleIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'moduleIds deve ser um array não vazio'
+      });
+    }
+    
+    const results = await moduleService.bulkDisableModules(tenantId, moduleIds, req.user!.id);
+    
+    res.json({
+      success: true,
+      data: results,
+      message: `${results.success.length} módulos desativados, ${results.failed.length} falharam`
+    });
+  } catch (error: any) {
+    console.error('Error bulk disabling modules:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao desativar módulos em massa'
+    });
+  }
+});
+
+// Buscar módulos com status do tenant
+router.get('/tenants/:tenantId/modules/with-status', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId } = req.params;
+    
+    const modulesWithStatus = await moduleService.getModulesWithTenantStatus(tenantId);
+    
+    res.json({
+      success: true,
+      data: modulesWithStatus
+    });
+  } catch (error: any) {
+    console.error('Error fetching modules with tenant status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao buscar módulos com status'
+    });
+  }
+});
+
+// ============= MODULE USAGE TRACKING =============
+
+// Rastrear uso de módulo
+router.post('/tenants/:tenantId/modules/:moduleId/track-usage', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId, moduleId } = req.params;
+    const { usageType, amount = 1 } = req.body;
+    
+    if (!['request', 'instance', 'user'].includes(usageType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'usageType deve ser request, instance ou user'
+      });
+    }
+    
+    await moduleService.trackModuleUsage(tenantId, moduleId, usageType, amount);
+    
+    res.json({
+      success: true,
+      message: 'Uso rastreado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error tracking module usage:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao rastrear uso do módulo'
+    });
+  }
+});
+
+// Reset de uso de módulo
+router.post('/tenants/:tenantId/modules/:moduleId/reset-usage', async (req: AuthRequest, res: Response) => {
+  try {
+    const { tenantId, moduleId } = req.params;
+    const { usageType } = req.body;
+    
+    if (usageType && !['request', 'instance', 'user'].includes(usageType)) {
+      return res.status(400).json({
+        success: false,
+        message: 'usageType deve ser request, instance, user ou undefined para resetar tudo'
+      });
+    }
+    
+    await moduleService.resetModuleUsage(tenantId, moduleId, usageType);
+    
+    res.json({
+      success: true,
+      message: 'Uso resetado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error resetting module usage:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro ao resetar uso do módulo'
     });
   }
 });
