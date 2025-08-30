@@ -8,6 +8,7 @@ import stripeRoutes from './routes/stripeRoutes';
 import wahaRoutes from './routes/wahaRoutes';
 import messageRoutes from './routes/messageRoutes';
 import workflowRoutes from './routes/workflowRoutes';
+import adminRoutes from './routes/adminRoutes';
 import emailService from './services/emailService';
 
 dotenv.config();
@@ -40,6 +41,7 @@ app.use('/api', stripeRoutes);
 app.use('/api', wahaRoutes);
 app.use('/api', messageRoutes);
 app.use('/api', workflowRoutes);
+app.use('/api/admin', adminRoutes); // Painel administrativo - apenas super admins
 
 // Health check
 app.get('/health', (req, res) => {

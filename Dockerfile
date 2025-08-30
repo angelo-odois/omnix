@@ -23,4 +23,4 @@ ENV NODE_ENV=production
 ENV PORT=8301
 
 # Comando para iniciar
-CMD ["node", "dist/app.js"]
+CMD ["node", "dist/index.js"]
