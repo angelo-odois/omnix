@@ -75,7 +75,7 @@ router.get('/salvy/numbers/owned', authenticate, async (req: AuthRequest, res: R
     const tenantNumbers = tenantNumbersService.getTenantNumbers(tenantId);
     
     // Formatar números para o formato esperado pelo frontend
-    const formattedNumbers = tenantNumbers.map(num => ({
+    const formattedNumbers = tenantNumbers.map((num: any) => ({
       id: num.salvyAccountId,
       number: num.phoneNumber,
       country: 'BR',

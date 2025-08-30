@@ -217,6 +217,45 @@ class MessageService {
     return chats;
   }
 
+  // Buscar chats de uma sessão para um tenant específico
+  getChatsForSession(sessionName: string, tenantId: string): Chat[] {
+    const chats: Chat[] = [];
+    
+    for (const chat of this.chats.values()) {
+      if (chat.sessionName === sessionName && chat.tenantId === tenantId) {
+        chats.push(chat);
+      }
+    }
+    
+    // Ordenar por última mensagem
+    chats.sort((a, b) => {
+      const timeA = a.lastMessageTime?.getTime() || 0;
+      const timeB = b.lastMessageTime?.getTime() || 0;
+      return timeB - timeA;
+    });
+    
+    return chats;
+  }
+
+  // Buscar mensagens de um chat específico para uma sessão e tenant
+  getMessagesForChat(sessionName: string, tenantId: string, contactId: string): WhatsAppMessage[] {
+    const chatId = contactId.includes('@') ? contactId : `${contactId}@c.us`;
+    const messages: WhatsAppMessage[] = [];
+    
+    for (const message of this.messages.values()) {
+      if (message.sessionName === sessionName && 
+          message.tenantId === tenantId && 
+          message.chatId === chatId) {
+        messages.push(message);
+      }
+    }
+    
+    // Ordenar por timestamp (mais antiga primeiro para exibição no chat)
+    messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+    
+    return messages;
+  }
+
   // Marcar mensagens como lidas
   markChatAsRead(chatId: string): void {
     const chat = this.chats.get(chatId);

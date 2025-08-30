@@ -555,7 +555,7 @@ router.post('/waha/webhook', async (req: Request, res: Response) => {
           console.log('Message processed (legacy):', {
             id: processedMessage.id,
             from: processedMessage.from,
-            content: processedMessage.content?.substring(0, 50)
+            content: processedMessage.body?.substring(0, 50)
           });
         }
         break;
@@ -628,7 +628,7 @@ router.post('/waha/webhook/:token', async (req: Request, res: Response) => {
           console.log('Message processed:', {
             id: processedMessage.id,
             from: processedMessage.from,
-            content: processedMessage.content?.substring(0, 50)
+            content: processedMessage.body?.substring(0, 50)
           });
         }
         break;

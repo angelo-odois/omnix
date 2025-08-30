@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
-  apiVersion: '2024-12-18.acacia'
+  apiVersion: '2025-08-27.basil'
 });
 
 interface CreateCheckoutSessionParams {
@@ -203,9 +203,11 @@ class StripeService {
       );
 
       // Processar diferentes tipos de eventos
+      let session: Stripe.Checkout.Session | undefined;
+      
       switch (event.type) {
         case 'checkout.session.completed':
-          const session = event.data.object as Stripe.Checkout.Session;
+          session = event.data.object as Stripe.Checkout.Session;
           console.log('Payment completed for session:', session.id);
           
           // Aqui vamos chamar a criação do número na Salvy

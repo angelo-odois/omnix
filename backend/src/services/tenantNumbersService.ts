@@ -17,6 +17,9 @@ interface TenantNumber {
     type?: string;
     capabilities?: string[];
     connectedInstance?: string;
+    wahaSessionName?: string;
+    status?: string;
+    connectedAt?: string;
   };
 }
 

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { workflowService } from '../services/workflowService';
 import { authenticate, authorize, AuthRequest, requireTenantAdmin } from '../middlewares/authV2';
+import { UserRole } from '../services/authServiceV2';
 
 const router = Router();
 
@@ -70,7 +71,7 @@ router.get('/workflows/:workflowId', authenticate, async (req: AuthRequest, res:
 // Criar novo workflow
 router.post('/workflows', 
   authenticate, 
-  authorize('tenant_admin', 'tenant_manager'),
+  authorize(UserRole.TENANT_ADMIN, UserRole.TENANT_MANAGER),
   async (req: AuthRequest, res: Response) => {
     try {
       const { name, description, nodes } = req.body;
@@ -110,7 +111,7 @@ router.post('/workflows',
 // Atualizar workflow
 router.put('/workflows/:workflowId',
   authenticate,
-  authorize('tenant_admin', 'tenant_manager'),
+  authorize(UserRole.TENANT_ADMIN, UserRole.TENANT_MANAGER),
   async (req: AuthRequest, res: Response) => {
     try {
       const { workflowId } = req.params;
@@ -248,7 +249,7 @@ router.post('/workflows/:workflowId/execute',
 // Ativar/Desativar workflow
 router.patch('/workflows/:workflowId/toggle',
   authenticate,
-  authorize('tenant_admin', 'tenant_manager'),
+  authorize(UserRole.TENANT_ADMIN, UserRole.TENANT_MANAGER),
   async (req: AuthRequest, res: Response) => {
     try {
       const { workflowId } = req.params;
@@ -308,7 +309,7 @@ router.get('/workflow-templates', authenticate, async (req: AuthRequest, res: Re
 // Criar workflow a partir de template
 router.post('/workflow-templates/:templateId/create',
   authenticate,
-  authorize('tenant_admin', 'tenant_manager'),
+  authorize(UserRole.TENANT_ADMIN, UserRole.TENANT_MANAGER),
   async (req: AuthRequest, res: Response) => {
     try {
       const { templateId } = req.params;
