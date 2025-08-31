@@ -81,7 +81,7 @@ class MessageService {
   }): Promise<MessageData[]> {
     const messages = await prisma.message.findMany({
       where: { conversationId },
-      orderBy: { timestamp: 'desc' },
+      orderBy: { timestamp: 'asc' },
       take: pagination?.limit || 50,
       skip: pagination?.offset || 0
     });

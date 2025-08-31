@@ -19,6 +19,7 @@ import { useNotificationStore } from '../store/notificationStore';
 import InstanceTest from '../components/debug/InstanceTest';
 import type { PeriodFilter } from '../services/dashboardService';
 import { api } from '../lib/api';
+import { withPageId, withComponentId, withFeatureId } from '../utils/componentId';
 
 interface StatCard {
   label: string;
@@ -260,9 +261,9 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+    <div {...withPageId('Dashboard')} className="space-y-6">
+      <div {...withComponentId('DashboardHeader')} className="flex items-center justify-between">
+        <div {...withComponentId('DashboardHeader', 'title')}>
           <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
           <p className="text-gray-600 mt-1">
             Visão geral do sistema
@@ -369,9 +370,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div {...withComponentId('StatsGrid')} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
+          <div 
+            {...withComponentId('StatCard', stat.label.toLowerCase().replace(/\s+/g, '-'))}
+            key={stat.label} 
+            className="bg-white rounded-lg shadow-sm border border-gray-100 p-6"
+            data-stat-label={stat.label}
+            data-stat-value={stat.value}
+          >
             <div className="flex items-center justify-between mb-4">
               <div className={`${stat.color} p-3 rounded-lg`}>
                 <stat.icon className="w-6 h-6 text-white" />

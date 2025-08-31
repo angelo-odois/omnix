@@ -14,6 +14,7 @@ import whatsappRoutes from './modules/whatsapp/routes';
 import messagesRoutes from './modules/messages/routes';
 import contactsRoutes from './modules/contacts/routes';
 import dashboardRoutes from './routes/dashboardRoutes';
+import aiRoutes from './routes/aiRoutes';
 import emailService from './services/emailService';
 
 dotenv.config();
@@ -56,6 +57,7 @@ app.use('/api/whatsapp', whatsappRoutes); // WhatsApp instance management
 app.use('/api/messages', messagesRoutes); // Message and conversation management
 app.use('/api/contacts', contactsRoutes); // Contact management
 app.use('/api/dashboard', dashboardRoutes); // Dashboard metrics and data
+app.use('/api/ai', aiRoutes); // AI analysis and suggestions
 
 // Health check
 app.get('/health', (req, res) => {

@@ -23,7 +23,10 @@ export default function useMessageNotifications() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
+    console.log('🔔 Message notifications hook initialized for user:', user?.email);
+    
     if (!user?.tenantId || user.role === 'super_admin') {
+      console.log('⏭️ Skipping notifications for super admin or no tenant');
       return;
     }
 

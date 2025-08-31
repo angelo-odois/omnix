@@ -1,0 +1,138 @@
+Construir um SaaS whitelabel de atendimento por WhatsApp com integração Salvy (aquisição/gestão de números digitais) e integração WAHA (mensageria, baseado em WhatsApp Web), com múltiplos operadores no mesmo número, múltiplos números por tenant (seleção em tempo real por operador) e um módulo de Workflows estilo n8n (drag-and-drop) que consome os endpoints do WAHA para automações de triagem/boas-vindas, dando sensação de IA. A UI não deve copiar o WhatsApp Web; queremos layout próprio, limpo e eficiente.
+Haverá um Console da Dois (Master Admin) para governança de tenants, e um Painel do Tenant (Admin/Gestor/Operador). Todos os dados persistidos devem ser criptografados (detalhes em Segurança).
+Fontes técnicas do WAHA (para o time):
+Swagger/OpenAPI do WAHA (listar/inspecionar endpoints, exemplos, testes via Swagger UI). 
+WAHA
+Guia de Swagger do WAHA (como usar a especificação/Swagger UI). 
+WAHA
+Configuração WAHA & envs relevantes (ex.: WAHA_BASE_URL, portas). 
+WAHA
+Hardening do WAHA (uso de WAHA_API_KEY para proteger endpoints). 
+Medium
+Ambientes & Perfis
+Console da Dois (Master Admin)
+Criar/editar/suspender tenants; planos/limites/flags; billing; observabilidade global; catálogo de números (Salvy) e fleet manager das instâncias WAHA; impersonate para suporte; auditoria e LGPD.
+Painel do Tenant (Cliente)
+Perfis: Admin, Gestor, Operador. Login via magic link/OTP. Whitelabel (logo/cores/domínio). RBAC por fila/instância.
+Integrações
+Salvy (números digitais)
+Catálogo/compra/portabilidade de DIDs; vínculo ao tenant; provisionamento automático de instância WAHA correspondente; painel de custos/uso; auditoria.
+WAHA (instâncias/sessões)
+Várias instâncias por tenant (1 instância = 1 número). Saúde da sessão (Conectado/QR/Erro), métricas e webhooks (message, ack/status) conforme a OpenAPI/Swagger. 
+WAHA
++1
+Atendimento & CRM
+Seleção de Número (instância WAHA)
+Seletor fixo na conversa; default por operador; troca por conversa.
+Aceite: próxima mensagem sai pelo novo instance_id; metadados gravados.
+Apresentação do Atendente
+Na 1ª resposta ou mudança de assignee, prefixar:
+👤 Atendente: {{operator_name}} — {{team}}
+Aceite: visível ao cliente e persistido.
+Distribuição/Colaboração
+Round-robin/menos ocupado/por fila; presença “digitando/visualizando”; bloqueio suave; transferência; notas internas; tags; SLA/auto-resposta fora do horário.
+Mensagens
+Texto, mídia (imagem/áudio/vídeo/doc via URL/upload), templates aprovados, respostas rápidas; status enviado/entregue/lido; marcar como lida.
+Lista de Contatos (CRM leve)
+Auto-enriquecimento ao primeiro contato: telefone E.164, nome, tags, empresa, observações, campos custom; busca instantânea; histórico completo.
+Workflows estilo n8n (sensação de IA)
+Canvas drag-and-drop com:
+Triggers: mensagem recebida, horário, webhook, mudança de assignee/status.
+Ações WAHA: enviar texto/mídia/template, marcar lida, transferir fila/operador, encerrar. (Basear em endpoints do Swagger WAHA). 
+WAHA
+Condições: keyword/regex, horário, canal, tags, variáveis, intenção simples (sinônimos/regras).
+Delays/Retry, HTTP Request, variáveis/contexto.
+“IA-like”: sugestão de respostas por biblioteca + placeholders; classificação por regras; conector LLM opcional (feature flag).
+Versionamento, Draft→Active, simulação com logs por nó; blueprints públicos (Dois) e privados (tenant).
+Escopo: global, por fila, por instância ou por tag de contato.
+Landing Page de Venda (whitelabel por tenant opcional)
+Objetivo: converter leads B2B para trial/contato comercial.
+Páginas/Seções (MVP):
+Hero (headline claro + subheadline + CTA “Testar grátis”/“Falar com time”).
+Prova social (logos, depoimentos curtos, métricas).
+Como funciona (3–5 cards: Multioperador; Multinúmero; Workflows “IA-like”; Integração WAHA; Números Salvy).
+Demonstração (GIF/loom curto + 3 highlights do fluxo real).
+Casos de uso (Comercial, Suporte, Cobrança/Backoffice).
+Planos & preços (por instância/operador/mensagens; comparar recursos; FAQs de billing).
+Segurança & Conformidade (ver seção Segurança abaixo—resumo amigável + link para página técnica).
+Integrações (WAHA + Salvy; menção ao Swagger/OpenAPI do WAHA). 
+WAHA
++1
+FAQ (limites, templates de mensagem, privacidade/LGPD, suporte).
+CTA final (Trial / Demo).
+Requisitos de LP:
+Performance: LCP < 2.0s (p75), imagens otimizadas/lazy, fontes locais.
+SEO: títulos H1/H2, schema Product/FAQ, OpenGraph/Twitter, sitemap/robots.
+A/B testing (hero/CTA), Pixels (GA4, Meta, LinkedIn) + consent (LGPD).
+Formulário com validação e rate-limit; integração com CRM/n8n.
+Painel de edição (CMS leve) para textos/preços/FAQs (por tenant, se whitelabel).
+Requisitos Não Funcionais
+Idempotência: dedupe por waha_message_id/message.id (reprocessos não duplicam).
+Latência alvo: recebimento → UI < 1s (p95).
+Escalabilidade/Resiliência: filas, retries exponenciais, circuit breaker, backpressure.
+Observabilidade: logs estruturados, métricas, tracing; alertas.
+Privacidade/LGPD: segregação por tenant, retenção configurável, export/delete sob solicitação.
+Segurança & Criptografia (obrigatório)
+Em trânsito:
+TLS 1.3 em todos os domínios; HSTS; CORS restrito; CSP estrito; cookies Secure/HttpOnly quando aplicável.
+Em repouso (persistência):
+Criptografia por padrão de TODOS os dados:
+Banco: envelope encryption com chave por tenant (KEK no KMS + DEK por tabela/registro). Campos sensíveis (PII/telefones/nome, notas internas, metadados de mensagens) com criptografia de campo (AEAD: AES-GCM/ChaCha20-Poly1305).
+Arquivos/mídia: Storage com server-side encryption + link assinado (expira em minutos); opcional client-side encryption no upload.
+Backups: criptografados com chaves separadas e rotação.
+Gestão de chaves: KMS (GCP/AWS) com rotação automática, envelopamento, KDF, logs de acesso, split-knowledge para operações.
+Segredos: Vault/Secret Manager; nunca em código.
+Webhooks WAHA: HMAC obrigatório (timestamp/nonce, janela de aceitação), verificar e deduplicar; WAHA_API_KEY habilitado na instância WAHA. 
+Medium
+Acesso & Auditoria:
+JWT com scopes; impersonation auditado; MFA para perfis sensíveis (Console da Dois).
+Rate-limit por IP/tenant; detecção de abuso (envio massivo/mídia).
+Trilhas de auditoria imutáveis (WORM) para ações administrativas.
+Fluxos-Chave (com critérios de aceite)
+Escolha de Número: seletor mostra instâncias (“Comercial (55 11)”, “Suporte (55 61)”).
+Aceite: próxima mensagem usa o novo instance_id; metadados registrados.
+Apresentação do Atendente: prefixo na 1ª resposta ou mudança de assignee.
+Aceite: visível ao cliente e persistido no histórico.
+Atendimento Simultâneo no Mesmo Número: múltiplos operadores na mesma instância.
+Aceite: roteamento evita colisão; presença/“digitando” visível; bloqueio suave ativo.
+Lista de Contatos: contato criado/atualizado; edição de nome/tags.
+Aceite: busca instantânea; histórico completo ao abrir.
+Webhook WAHA: receber message e ack/status; validar HMAC; dedupe.
+Aceite: reprocessar o mesmo message.id 3x gera 1 registro único; status atualiza sem duplicar. 
+WAHA
+Integração Salvy: comprar DID → vincular → provisionar instância WAHA.
+Aceite: número disponível no seletor; health-check OK exibido.
+Workflow de Boas-Vindas (IA-like): mensagem sem assignee dispara triagem (intenção por regras/sinônimos, resposta, transfer, delay, fallback humano).
+Aceite: logs por nó; resposta correta < 2s; takeover com 1 clique.
+Landing Page:
+Aceite: LCP p75 < 2.0s; SEO básico ok; formulário proteg. anti-spam; eventos GA4 disparando; variação A/B cadastrada; seção de Segurança espelhando os controles acima.
+Dados & Modelagem (alto nível)
+tenants(id, nome, domínio, tema, plano, flags, billing_config, status, created_at, kms_key_id)
+users(id, tenant_id, nome, email, perfil, ativo, defaults)
+instances(id, tenant_id, salvy_number_id, waha_instance_id, apelido, status, métricas)
+contacts(id, tenant_id, phone_e164 uniq_enc, nome_enc, tags_enc[], empresa_enc, campos_custom_enc)
+conversations(id, tenant_id, contact_id, instance_id, assignee_user_id, fila, status, sla, notas_enc)
+messages(id, tenant_id, conversation_id, direction, instance_id, waha_message_id uniq, type, body_enc/meta_enc, status, ts)
+workflows(id, tenant_id, nome, escopo, versão, estado, json_definition_enc, logs)
+audit_logs(tenant_id, actor, ação, alvo, payload_enc, ts, immutable)
+numbers_salvy(id, tenant_id, did, status, custo, data_aquisicao)
+plans/feature_flags/billing_events/invoices/usages por tenant/instância.
+Sufixos _enc indicam criptografia de campo (AEAD).
+Endpoints (alto nível)
+Ingressos
+POST /webhooks/waha — headers X-Signature-HMAC, X-Timestamp; valida HMAC; dedupe por message.id; enfileira realtime. (Basear na Swagger). 
+WAHA
+POST /webhooks/billing — eventos de cobrança.
+API Tenant
+GET /instances | POST /messages/send | POST /conversations/transfer | GET /contacts?query=
+POST /workflows/run-test | POST /salvy/numbers/purchase | POST /salvy/numbers/link
+API Console da Dois
+POST /admin/tenants | POST /admin/tenants/:id/impersonate
+POST /admin/plans | POST /admin/feature-flags
+GET /admin/observability/* | POST /admin/blueprints/publish
+UX & UI (diretrizes)
+Console da Dois: visão por tenant (saúde/uso/custo/alertas), ações rápidas (reset QR, reprovisionar WAHA), catálogo de números Salvy, publicação de blueprints.
+Tenant: seletor de instância fixo; pílulas de presença; status da instância; Canvas de Workflow com minimapa/zoom/validação; ações rápidas (marcar lida/transferir/template/nota).
+Landing Page: visual clean, seção “Como funciona” animada, badge de segurança (KMS, HMAC, AES-GCM), captura de lead com prova social.
+
+Mapei cada arquivo criado dentro da arvore do projeto, para que eu saiba onde devo criar cada aqui.

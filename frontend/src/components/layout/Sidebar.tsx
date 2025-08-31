@@ -8,12 +8,14 @@ import {
   BarChart3,
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Brain
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '../../utils/cn';
 import { useAuthStore } from '../../store/authStore';
 import useModules from '../../hooks/useModules';
+import { withLayoutId, withComponentId } from '../../utils/componentId';
 
 interface NavItem {
   label: string;
@@ -36,7 +38,7 @@ const navItems: NavItem[] = [
     icon: MessageSquare, 
     path: '/conversations',
     requiredModules: ['messages'],
-    description: 'Central de mensagens'
+    description: 'Central de mensagens com IA'
   },
   { 
     label: 'Contatos', 
@@ -67,6 +69,13 @@ const navItems: NavItem[] = [
     path: '/settings', 
     roles: ['super_admin', 'tenant_admin'],
     description: 'Configurações do sistema'
+  },
+  { 
+    label: 'IA & Prompts', 
+    icon: Brain, 
+    path: '/ai-prompts', 
+    roles: ['super_admin', 'tenant_admin'],
+    description: 'Gerenciar prompts e scripts de IA'
   },
   { 
     label: 'Todas Instâncias', 
@@ -102,46 +111,50 @@ export default function Sidebar() {
 
   return (
     <aside 
+      {...withLayoutId('Sidebar')}
       className={cn(
         'bg-gray-900 text-white h-screen transition-all duration-300 flex flex-col',
         collapsed ? 'w-16' : 'w-64'
       )}
+      data-collapsed={collapsed}
     >
-      <div className="p-4 border-b border-gray-800">
+      <div {...withComponentId('SidebarHeader')} className="p-4 border-b border-gray-800">
         <div className="flex items-center justify-between">
           <div className={cn('flex items-center gap-3', collapsed && 'hidden')}>
-            <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+            <div {...withComponentId('SidebarHeader', 'logo')} className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
               <MessageSquare className="w-6 h-6" />
             </div>
-            <div>
+            <div {...withComponentId('SidebarHeader', 'brand')}>
               <h1 className="font-bold text-lg">{tenant?.name || 'OmniX'}</h1>
               <p className="text-xs text-gray-400">WhatsApp Business</p>
             </div>
           </div>
           <button
+            {...withComponentId('SidebarHeader', 'toggle')}
             onClick={() => setCollapsed(!collapsed)}
             className="p-1 hover:bg-gray-800 rounded"
+            data-action="toggle-sidebar"
           >
             {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
         </div>
       </div>
 
-      <nav className="flex-1 p-4">
+      <nav {...withComponentId('SidebarNav')} className="flex-1 p-4">
         {loading ? (
-          <div className="space-y-2">
+          <div {...withComponentId('SidebarNav', 'loading')} className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="h-10 bg-gray-800 rounded animate-pulse"></div>
             ))}
           </div>
         ) : (
-          <ul className="space-y-2">
+          <ul {...withComponentId('SidebarNav', 'menu')} className="space-y-2">
             {filteredNavItems.map((item) => {
               const isModuleBasedItem = item.requiredModules && item.requiredModules.length > 0;
               const hasRequiredModules = isModuleBasedItem ? hasAnyModule(item.requiredModules) : true;
               
               return (
-                <li key={item.path}>
+                <li key={item.path} {...withComponentId('NavItem', item.path.replace('/', ''))}>
                   <NavLink
                     to={item.path}
                     className={({ isActive }) =>
@@ -154,8 +167,11 @@ export default function Sidebar() {
                       )
                     }
                     title={collapsed ? `${item.label}${item.description ? ` - ${item.description}` : ''}` : undefined}
+                    data-nav-item={item.label}
+                    data-nav-path={item.path}
+                    data-nav-active={window.location.pathname === item.path}
                   >
-                    <item.icon size={20} />
+                    <item.icon className="w-5 h-5 flex-shrink-0" />
                     {!collapsed && (
                       <>
                         <span className="flex-1">{item.label}</span>

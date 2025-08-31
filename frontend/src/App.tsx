@@ -11,12 +11,13 @@ import Dashboard from './pages/Dashboard';
 import Instances from './pages/Instances';
 import WhatsAppInstances from './pages/WhatsAppInstances';
 import Contacts from './pages/Contacts';
-import Chat from './pages/Chat';
+import ChatV4 from './pages/ChatV4';
 import Workflows from './pages/Workflows';
 import AdminDashboard from './pages/AdminDashboard';
 import ModuleMarketplace from './pages/ModuleMarketplace';
 import Settings from './pages/Settings';
 import AllInstances from './pages/AllInstances';
+import AIPromptManager from './pages/AIPromptManager';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -52,7 +53,7 @@ function App() {
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="conversations" element={
               <ModuleProtectedRoute requiredModules={['messages']}>
-                <Chat />
+                <ChatV4 />
               </ModuleProtectedRoute>
             } />
             <Route path="contacts" element={
@@ -92,6 +93,11 @@ function App() {
             <Route path="all-instances" element={
               <ProtectedRoute roles={['super_admin']}>
                 <AllInstances />
+              </ProtectedRoute>
+            } />
+            <Route path="ai-prompts" element={
+              <ProtectedRoute roles={['super_admin', 'tenant_admin']}>
+                <AIPromptManager />
               </ProtectedRoute>
             } />
           </Route>
