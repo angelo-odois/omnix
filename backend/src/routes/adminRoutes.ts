@@ -3,7 +3,7 @@ import { authenticate, AuthRequest } from '../middlewares/authV2';
 import { requireSuperAdmin, requireAdminAccess } from '../middlewares/adminAuth';
 import { adminService } from '../services/adminService';
 import { moduleService } from '../services/moduleService';
-import { authServiceV2, UserRole } from '../services/authServiceV2';
+import authServiceV2 from '../services/authServiceV2';
 
 const router = Router();
 

@@ -30,18 +30,21 @@ export const requireModule = (moduleId: string, action?: 'read' | 'write' | 'adm
         });
       }
 
-      // Para usuários do sistema (sem tenant), verificar se o módulo é core
+      // Módulos core sempre têm acesso (WhatsApp, Messages, Contacts)
+      if (module.isCore) {
+        console.log(`Core module ${moduleId} access granted for user ${req.user.email}`);
+        return next();
+      }
+
+      // Para usuários do sistema (sem tenant), apenas módulos core
       if (!req.user.tenantId) {
-        if (module.isCore) {
-          return next();
-        }
         return res.status(403).json({
           success: false,
           message: 'Módulo não disponível para usuários do sistema',
         });
       }
 
-      // Verificar se o módulo está ativo para o tenant
+      // Para módulos não-core, verificar se está ativo para o tenant
       const tenantModule = await moduleService.getTenantModule(req.user.tenantId, moduleId);
       
       if (!tenantModule || !tenantModule.isEnabled || !tenantModule.isActive) {

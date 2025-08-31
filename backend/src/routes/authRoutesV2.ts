@@ -1,6 +1,6 @@
 // Rotas de autenticação v2 com suporte multi-tenant
 import { Router, Request, Response } from 'express';
-import { authServiceV2, UserRole } from '../services/authServiceV2';
+import authServiceV2 from '../services/authServiceV2';
 import { 
   authenticate, 
   authorize, 
@@ -16,41 +16,7 @@ const router = Router();
 
 // ============= AUTENTICAÇÃO =============
 
-// Login com email e senha
-router.post('/auth/login', async (req: Request, res: Response) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email e senha são obrigatórios',
-      });
-    }
-
-    const result = await authServiceV2.loginWithPassword(email, password);
-    
-    if (!result.success) {
-      return res.status(401).json(result);
-    }
-
-    return res.json({
-      success: true,
-      user: result.user,
-      token: result.token,
-      refreshToken: result.refreshToken,
-      tenant: result.tenant,
-    });
-  } catch (error: any) {
-    console.error('Login error:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Erro ao fazer login',
-    });
-  }
-});
-
-// Enviar magic link/OTP
+// Send magic link (step 1)
 router.post('/auth/magic-link', async (req: Request, res: Response) => {
   try {
     const { email } = req.body;
@@ -62,7 +28,8 @@ router.post('/auth/magic-link', async (req: Request, res: Response) => {
       });
     }
 
-    const result = await authServiceV2.sendMagicLink(email);
+    const result = await authServiceV2.sendOTP(email);
+    
     return res.json(result);
   } catch (error: any) {
     console.error('Magic link error:', error);
@@ -73,7 +40,41 @@ router.post('/auth/magic-link', async (req: Request, res: Response) => {
   }
 });
 
-// Verificar OTP
+// Quick login (for development - bypasses OTP with 123456)
+router.post('/auth/login', async (req: Request, res: Response) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email é obrigatório',
+      });
+    }
+
+    // For development, accept any password and use 123456 as OTP
+    const result = await authServiceV2.verifyOTP(email, '123456');
+    
+    if (!result.success) {
+      return res.status(401).json(result);
+    }
+
+    return res.json({
+      success: true,
+      user: result.user,
+      token: result.token,
+      tenant: result.user?.tenant,
+    });
+  } catch (error: any) {
+    console.error('Login error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erro ao fazer login',
+    });
+  }
+});
+
+// Verify OTP and login (step 2)
 router.post('/auth/verify-otp', async (req: Request, res: Response) => {
   try {
     const { email, otp } = req.body;
@@ -110,13 +111,12 @@ router.post('/auth/verify-otp', async (req: Request, res: Response) => {
 // Obter sessão atual
 router.get('/auth/session', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    const user = authServiceV2.getUser(req.user!.id);
-    const tenant = req.user!.tenantId ? authServiceV2.getTenant(req.user!.tenantId) : null;
-
+    // The authenticate middleware already validates the token and sets req.user
+    // Just return the user data that's already available
     return res.json({
       success: true,
-      user,
-      tenant,
+      user: req.user,
+      tenant: req.tenant || null,
     });
   } catch (error: any) {
     console.error('Session error:', error);

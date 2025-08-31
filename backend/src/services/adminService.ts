@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Package, TenantAdmin, Permission, Role, AdminStats, PackageFeature, PackageLimits, TenantUsage, TenantSettings, PackageModule } from '../types/admin';
 import { SYSTEM_MODULES } from '../types/modules';
+import { authServiceV2 } from './authServiceV2';
 
 class AdminService {
   private packages: Map<string, Package> = new Map();
@@ -283,8 +284,8 @@ class AdminService {
     // Setup automático dos módulos baseado no pacote
     try {
       const { moduleService } = await import('./moduleService');
-      await moduleService.setupTenantModulesFromPackage(newTenant.id, packageId, createdBy);
-      console.log(`Modules auto-configured for tenant ${newTenant.id} with package ${packageId}`);
+      await moduleService.setupTenantModulesFromPackage(newTenant.id, tenantData.packageId, createdBy);
+      console.log(`Modules auto-configured for tenant ${newTenant.id} with package ${tenantData.packageId}`);
     } catch (error) {
       console.error(`Failed to setup modules for tenant ${newTenant.id}:`, error);
       // Não falha a criação do tenant se os módulos falharem
@@ -294,9 +295,50 @@ class AdminService {
   }
 
   async getAllTenants(): Promise<TenantAdmin[]> {
-    return Array.from(this.tenantsAdmin.values()).sort((a, b) => 
-      b.createdAt.getTime() - a.createdAt.getTime()
-    );
+    // Combinar tenants do adminService com os do authServiceV2
+    const adminTenants = Array.from(this.tenantsAdmin.values());
+    const authTenants = authServiceV2.getAllTenants();
+    
+    // Converter tenants do authService para formato TenantAdmin
+    const convertedAuthTenants: TenantAdmin[] = authTenants
+      .filter(authTenant => !adminTenants.find(adminTenant => adminTenant.slug === authTenant.slug))
+      .map(authTenant => ({
+        id: authTenant.id,
+        name: authTenant.name,
+        slug: authTenant.slug,
+        email: authTenant.email || `${authTenant.slug}@example.com`,
+        packageId: 'pkg-starter', // Default package for existing tenants
+        status: 'active' as const,
+        billingStatus: 'current' as const,
+        usage: {
+          currentUsers: 1, // Placeholder - será calculado em tempo real
+          currentInstances: 0,
+          messagesThisMonth: 0,
+          currentContacts: 0,
+          currentWorkflows: 0,
+          currentIntegrations: 0,
+          storageUsedGB: 0,
+          lastCalculatedAt: new Date(),
+        },
+        settings: {
+          allowUserRegistration: true,
+          requireEmailVerification: true,
+          sessionTimeoutMinutes: 480,
+          maxLoginAttempts: 5,
+          enableWhatsAppIntegration: true,
+          enableWorkflows: true,
+          enableAPI: false,
+          customBranding: { enabled: false },
+          webhooks: { enabled: false },
+        },
+        createdAt: authTenant.createdAt,
+        updatedAt: authTenant.updatedAt,
+        createdBy: 'system',
+      }));
+
+    // Combinar e ordenar por data de criação
+    const allTenants = [...adminTenants, ...convertedAuthTenants];
+    return allTenants.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   }
 
   async getTenantById(id: string): Promise<TenantAdmin | undefined> {
@@ -347,9 +389,9 @@ class AdminService {
       const oldModuleIds = oldPackage ? new Set(oldPackage.modules.filter(m => m.included).map(m => m.moduleId)) : new Set();
       const newModuleIds = new Set(newPackage.modules.filter(m => m.included).map(m => m.moduleId));
       
-      const toActivate = Array.from(newModuleIds).filter(id => !oldModuleIds.has(id));
-      const toDeactivate = Array.from(oldModuleIds).filter(id => !newModuleIds.has(id));
-      const toUpdate = Array.from(newModuleIds).filter(id => oldModuleIds.has(id));
+      const toActivate: string[] = Array.from(newModuleIds).filter(id => !oldModuleIds.has(id as string)) as string[];
+      const toDeactivate: string[] = Array.from(oldModuleIds).filter(id => !newModuleIds.has(id as string)) as string[];
+      const toUpdate: string[] = Array.from(newModuleIds).filter(id => oldModuleIds.has(id as string)) as string[];
 
       // Ativar novos módulos
       const activatedModules: string[] = [];

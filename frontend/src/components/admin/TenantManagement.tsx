@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { adminService, TenantAdmin, Package } from '../../services/adminService';
 import TenantPlanManager from './TenantPlanManager';
+import CreateTenantModal from './CreateTenantModal';
 
 export default function TenantManagement() {
   const [tenants, setTenants] = useState<TenantAdmin[]>([]);
@@ -56,6 +57,14 @@ export default function TenantManagement() {
     
     // Mostrar notificação de sucesso
     alert(`Plano alterado com sucesso!\n\n📦 Módulos ativados: ${modulesChanged.activated.length}\n🔄 Módulos atualizados: ${modulesChanged.updated.length}\n❌ Módulos desativados: ${modulesChanged.deactivated.length}`);
+  };
+
+  const handleTenantCreated = (newTenant: TenantAdmin) => {
+    // Adicionar o novo tenant à lista
+    setTenants(prev => [newTenant, ...prev]);
+    
+    // Mostrar notificação de sucesso
+    alert(`Tenant "${newTenant.name}" criado com sucesso!\n\nMódulos configurados automaticamente baseados no plano ${packages.find(p => p.id === newTenant.packageId)?.name}.`);
   };
 
   const getStatusColor = (status: string) => {
@@ -217,38 +226,12 @@ export default function TenantManagement() {
         )}
       </div>
 
-      {/* Modal de criação - placeholder */}
+      {/* Create Tenant Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">Novo Tenant</h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Funcionalidade de criação de tenants será implementada em breve.
-            </p>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-              >
-                Criar
-              </button>
-            </div>
-          </div>
-        </div>
+        <CreateTenantModal
+          onTenantCreated={handleTenantCreated}
+          onClose={() => setShowModal(false)}
+        />
       )}
 
       {/* Plan Manager Modal */}

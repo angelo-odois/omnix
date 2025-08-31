@@ -1,8 +1,13 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Header from './Header';
+import Toast from '../notifications/Toast';
+import useMessageNotifications from '../../hooks/useMessageNotifications';
 
 export default function Layout() {
+  // Initialize message notifications monitoring globally
+  useMessageNotifications();
+
   return (
     <div className="flex h-screen bg-gray-50">
       <Sidebar />
@@ -12,6 +17,9 @@ export default function Layout() {
           <Outlet />
         </main>
       </div>
+      
+      {/* Global Toast Notifications */}
+      <Toast />
     </div>
   );
 }

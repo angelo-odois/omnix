@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { adminService, Package } from '../../services/adminService';
+import PackageEditor from './PackageEditor';
 
 export default function PackageManagement() {
   const [packages, setPackages] = useState<Package[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showModal, setShowModal] = useState(false);
+  const [showEditor, setShowEditor] = useState(false);
   const [editingPackage, setEditingPackage] = useState<Package | null>(null);
 
   useEffect(() => {
@@ -26,12 +27,24 @@ export default function PackageManagement() {
 
   const handleEdit = (pkg: Package) => {
     setEditingPackage(pkg);
-    setShowModal(true);
+    setShowEditor(true);
   };
 
   const handleCreate = () => {
     setEditingPackage(null);
-    setShowModal(true);
+    setShowEditor(true);
+  };
+
+  const handlePackageSaved = (savedPackage: Package) => {
+    if (editingPackage) {
+      // Atualizar pacote existente
+      setPackages(prev => prev.map(p => p.id === savedPackage.id ? savedPackage : p));
+    } else {
+      // Adicionar novo pacote
+      setPackages(prev => [savedPackage, ...prev]);
+    }
+    setShowEditor(false);
+    setEditingPackage(null);
   };
 
   const formatCurrency = (value: number) => {
@@ -171,40 +184,16 @@ export default function PackageManagement() {
         </div>
       )}
 
-      {/* Modal de criação/edição - placeholder */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-lg w-full">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">
-                {editingPackage ? 'Editar Pacote' : 'Novo Pacote'}
-              </h3>
-              <button
-                onClick={() => setShowModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                ✕
-              </button>
-            </div>
-            <p className="text-gray-600 mb-4">
-              Funcionalidade de criação/edição de pacotes será implementada em breve.
-            </p>
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 text-gray-600 border rounded hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-              >
-                Salvar
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Package Editor Modal */}
+      {showEditor && (
+        <PackageEditor
+          package={editingPackage}
+          onSave={handlePackageSaved}
+          onClose={() => {
+            setShowEditor(false);
+            setEditingPackage(null);
+          }}
+        />
       )}
     </div>
   );

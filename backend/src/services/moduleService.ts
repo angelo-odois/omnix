@@ -1,5 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 import { Module, TenantModuleConfig, ModuleStats, ModuleConfig, SYSTEM_MODULES, MODULE_CATEGORIES } from '../types/modules';
+import prisma from '../lib/database';
 
 class ModuleService {
   private modules: Map<string, Module> = new Map();
@@ -7,6 +8,8 @@ class ModuleService {
 
   constructor() {
     this.initializeSystemModules();
+    // Auto-initialize core modules for existing tenants (async)
+    setTimeout(() => this.initializeCoreModulesForExistingTenants(), 100);
   }
 
   private initializeSystemModules() {
@@ -17,10 +20,10 @@ class ModuleService {
         displayName: 'WhatsApp Integration',
         description: 'Conecte e gerencie números do WhatsApp Business API',
         version: '1.0.0',
-        category: MODULE_CATEGORIES.COMMUNICATION,
+        category: MODULE_CATEGORIES.CORE,
         isActive: true,
-        isCore: false,
-        requiresActivation: true,
+        isCore: true,
+        requiresActivation: false,
         dependencies: [
           { moduleId: SYSTEM_MODULES.MESSAGES, required: true },
           { moduleId: SYSTEM_MODULES.WEBHOOKS, required: true }
@@ -276,6 +279,48 @@ class ModuleService {
 
     systemModules.forEach(module => this.modules.set(module.id, module));
     console.log(`ModuleService: Initialized with ${systemModules.length} system modules`);
+  }
+
+  private async initializeCoreModulesForExistingTenants() {
+    try {
+      // Get tenants from database instead of authService
+      const tenants = await prisma.tenant.findMany();
+      
+      const coreModules = [SYSTEM_MODULES.MESSAGES, SYSTEM_MODULES.CONTACTS, SYSTEM_MODULES.WHATSAPP];
+      
+      for (const tenant of tenants) {
+        for (const moduleId of coreModules) {
+          const key = `${tenant.id}-${moduleId}`;
+          
+          // Só ativar se não existir ainda
+          if (!this.tenantModules.has(key)) {
+            const moduleConfig: TenantModuleConfig = {
+              tenantId: tenant.id,
+              moduleId,
+              isEnabled: true,
+              isActive: true,
+              config: this.modules.get(moduleId)?.defaultConfig || {},
+              usage: {
+                requests: 0,
+                storage: 0,
+                instances: 0,
+                users: 0
+              },
+              activatedAt: new Date(),
+              activatedBy: 'system-auto',
+              createdAt: new Date(),
+              updatedAt: new Date()
+            };
+            
+            this.tenantModules.set(key, moduleConfig);
+          }
+        }
+      }
+      
+      console.log(`ModuleService: Auto-activated core modules for ${tenants.length} existing tenants`);
+    } catch (error) {
+      console.error('Failed to auto-activate core modules:', error);
+    }
   }
 
   // Module Management
@@ -547,7 +592,7 @@ class ModuleService {
     success: string[];
     failed: { moduleId: string; error: string }[];
   }> {
-    const results = { success: [], failed: [] };
+    const results: { success: string[]; failed: { moduleId: string; error: string }[] } = { success: [], failed: [] };
 
     for (const moduleId of moduleIds) {
       try {
@@ -582,7 +627,7 @@ class ModuleService {
     success: string[];
     failed: { moduleId: string; error: string }[];
   }> {
-    const results = { success: [], failed: [] };
+    const results: { success: string[]; failed: { moduleId: string; error: string }[] } = { success: [], failed: [] };
 
     for (const moduleId of moduleIds) {
       try {

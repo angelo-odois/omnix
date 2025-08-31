@@ -1,14 +1,16 @@
 import { Router, Request, Response } from 'express';
 import { workflowService } from '../services/workflowService';
 import { authenticate, authorize, AuthRequest, requireTenantAdmin } from '../middlewares/authV2';
-import { UserRole } from '../services/authServiceV2';
+import { requireModule } from '../middlewares/moduleAuth';
+import { moduleService } from '../services/moduleService';
+import { SYSTEM_MODULES } from '../types/modules';
 
 const router = Router();
 
 // ============= WORKFLOW MANAGEMENT =============
 
 // Listar workflows do tenant
-router.get('/workflows', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/workflows', authenticate, requireModule(SYSTEM_MODULES.WORKFLOWS, 'read'), async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user!.tenantId;
     
@@ -35,7 +37,7 @@ router.get('/workflows', authenticate, async (req: AuthRequest, res: Response) =
 });
 
 // Obter workflow específico
-router.get('/workflows/:workflowId', authenticate, async (req: AuthRequest, res: Response) => {
+router.get('/workflows/:workflowId', authenticate, requireModule(SYSTEM_MODULES.WORKFLOWS, 'read'), async (req: AuthRequest, res: Response) => {
   try {
     const { workflowId } = req.params;
     const workflow = workflowService.getWorkflow(workflowId);
@@ -70,8 +72,9 @@ router.get('/workflows/:workflowId', authenticate, async (req: AuthRequest, res:
 
 // Criar novo workflow
 router.post('/workflows', 
-  authenticate, 
-  authorize(UserRole.TENANT_ADMIN, UserRole.TENANT_MANAGER),
+  authenticate,
+  requireModule(SYSTEM_MODULES.WORKFLOWS, 'write'),
+  authorize('tenant_admin', 'tenant_manager'),
   async (req: AuthRequest, res: Response) => {
     try {
       const { name, description, nodes } = req.body;
@@ -97,6 +100,15 @@ router.post('/workflows',
         return res.status(400).json(result);
       }
 
+      // Track module usage
+      if (tenantId) {
+        try {
+          await moduleService.trackModuleUsage(tenantId, SYSTEM_MODULES.WORKFLOWS, 'request');
+        } catch (trackingError) {
+          console.warn('Failed to track workflow usage:', trackingError);
+        }
+      }
+
       return res.status(201).json(result);
     } catch (error: any) {
       console.error('Create workflow error:', error);
@@ -111,7 +123,8 @@ router.post('/workflows',
 // Atualizar workflow
 router.put('/workflows/:workflowId',
   authenticate,
-  authorize(UserRole.TENANT_ADMIN, UserRole.TENANT_MANAGER),
+  requireModule(SYSTEM_MODULES.WORKFLOWS, 'write'),
+  authorize('tenant_admin', 'tenant_manager'),
   async (req: AuthRequest, res: Response) => {
     try {
       const { workflowId } = req.params;
@@ -153,6 +166,7 @@ router.put('/workflows/:workflowId',
 // Deletar workflow
 router.delete('/workflows/:workflowId',
   authenticate,
+  requireModule(SYSTEM_MODULES.WORKFLOWS, 'admin'),
   requireTenantAdmin,
   async (req: AuthRequest, res: Response) => {
     try {
@@ -196,6 +210,7 @@ router.delete('/workflows/:workflowId',
 // Executar workflow manualmente
 router.post('/workflows/:workflowId/execute',
   authenticate,
+  requireModule(SYSTEM_MODULES.WORKFLOWS, 'write'),
   async (req: AuthRequest, res: Response) => {
     try {
       const { workflowId } = req.params;
@@ -235,6 +250,15 @@ router.post('/workflows/:workflowId/execute',
         return res.status(400).json(result);
       }
 
+      // Track module usage for workflow execution
+      if (req.user?.tenantId) {
+        try {
+          await moduleService.trackModuleUsage(req.user.tenantId, SYSTEM_MODULES.WORKFLOWS, 'request');
+        } catch (trackingError) {
+          console.warn('Failed to track workflow execution usage:', trackingError);
+        }
+      }
+
       return res.json(result);
     } catch (error: any) {
       console.error('Execute workflow error:', error);
@@ -249,7 +273,7 @@ router.post('/workflows/:workflowId/execute',
 // Ativar/Desativar workflow
 router.patch('/workflows/:workflowId/toggle',
   authenticate,
-  authorize(UserRole.TENANT_ADMIN, UserRole.TENANT_MANAGER),
+  authorize('tenant_admin', 'tenant_manager'),
   async (req: AuthRequest, res: Response) => {
     try {
       const { workflowId } = req.params;
@@ -309,7 +333,8 @@ router.get('/workflow-templates', authenticate, async (req: AuthRequest, res: Re
 // Criar workflow a partir de template
 router.post('/workflow-templates/:templateId/create',
   authenticate,
-  authorize(UserRole.TENANT_ADMIN, UserRole.TENANT_MANAGER),
+  requireModule(SYSTEM_MODULES.WORKFLOWS, 'write'),
+  authorize('tenant_admin', 'tenant_manager'),
   async (req: AuthRequest, res: Response) => {
     try {
       const { templateId } = req.params;
@@ -344,6 +369,7 @@ router.post('/workflow-templates/:templateId/create',
 // Obter estatísticas do workflow
 router.get('/workflows/:workflowId/stats',
   authenticate,
+  requireModule(SYSTEM_MODULES.WORKFLOWS, 'read'),
   async (req: AuthRequest, res: Response) => {
     try {
       const { workflowId } = req.params;

@@ -8,6 +8,7 @@ import {
   CheckCircle,
   XCircle
 } from 'lucide-react';
+import ModuleStatusWidget from '../components/dashboard/ModuleStatusWidget';
 
 interface StatCard {
   label: string;
@@ -132,8 +133,12 @@ export default function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-lg shadow">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Module Status Widget */}
+        <div className="lg:col-span-1">
+          <ModuleStatusWidget />
+        </div>
+        <div className="lg:col-span-2 bg-white rounded-lg shadow">
           <div className="p-6 border-b border-gray-200">
             <h2 className="text-lg font-semibold text-gray-900">Status das Instâncias</h2>
           </div>

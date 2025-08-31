@@ -1,5 +1,6 @@
-import { Bell, Search } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
+import NotificationCenter from '../notifications/NotificationCenter';
 
 export default function Header() {
   const { user } = useAuthStore();
@@ -19,10 +20,7 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-4 ml-6">
-          <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <Bell size={20} className="text-gray-600" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-          </button>
+          <NotificationCenter />
 
           <div className="flex items-center gap-3">
             <div className="text-right">

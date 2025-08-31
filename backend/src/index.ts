@@ -9,6 +9,10 @@ import wahaRoutes from './routes/wahaRoutes';
 import messageRoutes from './routes/messageRoutes';
 import workflowRoutes from './routes/workflowRoutes';
 import adminRoutes from './routes/adminRoutes';
+import tenantModuleRoutes from './routes/tenantModuleRoutes';
+import whatsappRoutes from './modules/whatsapp/routes';
+import messagesRoutes from './modules/messages/routes';
+import contactsRoutes from './modules/contacts/routes';
 import emailService from './services/emailService';
 
 dotenv.config();
@@ -28,8 +32,12 @@ async function initializeServices() {
   try {
     await emailService.initialize();
     console.log('✅ Email service initialized');
+    
+    const authServiceV2 = (await import('./services/authServiceV2')).default;
+    await authServiceV2.initialize();
+    
   } catch (error) {
-    console.error('❌ Failed to initialize email service:', error);
+    console.error('❌ Failed to initialize services:', error);
   }
 }
 
@@ -42,6 +50,10 @@ app.use('/api', wahaRoutes);
 app.use('/api', messageRoutes);
 app.use('/api', workflowRoutes);
 app.use('/api/admin', adminRoutes); // Painel administrativo - apenas super admins
+app.use('/api/tenant', tenantModuleRoutes); // Self-service de módulos para tenants
+app.use('/api/whatsapp', whatsappRoutes); // WhatsApp instance management
+app.use('/api/messages', messagesRoutes); // Message and conversation management
+app.use('/api/contacts', contactsRoutes); // Contact management
 
 // Health check
 app.get('/health', (req, res) => {

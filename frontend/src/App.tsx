@@ -3,14 +3,19 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/authStore';
 import AuthProvider from './components/AuthProvider';
 import ProtectedRoute from './components/ProtectedRoute';
+import { ModuleProtectedRoute } from './components/layout/ModuleAwareNavigation';
 import Layout from './components/layout/Layout';
 import LoginV2 from './pages/LoginV2';
 import AcceptInvite from './pages/AcceptInvite';
 import Dashboard from './pages/Dashboard';
 import Instances from './pages/Instances';
+import WhatsAppInstances from './pages/WhatsAppInstances';
+import Contacts from './pages/Contacts';
 import Chat from './pages/Chat';
 import Workflows from './pages/Workflows';
 import AdminDashboard from './pages/AdminDashboard';
+import ModuleMarketplace from './pages/ModuleMarketplace';
+import Settings from './pages/Settings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -44,17 +49,43 @@ function App() {
           }>
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="conversations" element={<Chat />} />
-            <Route path="contacts" element={<div className="text-2xl">Contatos</div>} />
-            <Route path="instances" element={<Instances />} />
+            <Route path="conversations" element={
+              <ModuleProtectedRoute requiredModules={['messages']}>
+                <Chat />
+              </ModuleProtectedRoute>
+            } />
+            <Route path="contacts" element={
+              <ModuleProtectedRoute requiredModules={['contacts']}>
+                <Contacts />
+              </ModuleProtectedRoute>
+            } />
+            <Route path="instances" element={
+              <ModuleProtectedRoute 
+                requiredModules={['whatsapp']}
+                requiredRoles={['super_admin', 'tenant_admin', 'tenant_manager']}
+              >
+                <Instances />
+              </ModuleProtectedRoute>
+            } />
+            <Route path="whatsapp" element={
+              <ModuleProtectedRoute 
+                requiredModules={['whatsapp']}
+                requiredRoles={['super_admin', 'tenant_admin', 'tenant_manager']}
+              >
+                <WhatsAppInstances />
+              </ModuleProtectedRoute>
+            } />
             <Route path="workflows" element={
-              <ProtectedRoute roles={['super_admin', 'tenant_admin', 'tenant_manager']}>
+              <ModuleProtectedRoute 
+                requiredModules={['workflows']}
+                requiredRoles={['super_admin', 'tenant_admin', 'tenant_manager']}
+              >
                 <Workflows />
-              </ProtectedRoute>
+              </ModuleProtectedRoute>
             } />
             <Route path="settings" element={
               <ProtectedRoute roles={['super_admin', 'tenant_admin']}>
-                <div className="text-2xl">Configurações</div>
+                <Settings />
               </ProtectedRoute>
             } />
           </Route>

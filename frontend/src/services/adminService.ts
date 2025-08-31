@@ -9,6 +9,7 @@ export interface Package {
   billingInterval: 'monthly' | 'yearly';
   features: PackageFeature[];
   limits: PackageLimits;
+  modules: PackageModule[];
   isActive: boolean;
   isPopular: boolean;
   stripeProductId?: string;
@@ -16,6 +17,17 @@ export interface Package {
   createdAt: string;
   updatedAt: string;
   createdBy: string;
+}
+
+export interface PackageModule {
+  moduleId: string;
+  included: boolean;
+  limits?: {
+    maxInstances?: number;
+    maxUsers?: number;
+    maxRequests?: number;
+    customLimits?: Record<string, any>;
+  };
 }
 
 export interface PackageFeature {
