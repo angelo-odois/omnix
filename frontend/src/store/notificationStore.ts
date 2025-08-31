@@ -22,6 +22,8 @@ interface NotificationStore {
   soundEnabled: boolean;
   selectedSound: NotificationSound;
   customSoundUrl?: string;
+  customSoundName?: string;
+  isPlayingSound: boolean;
   
   // Actions
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
@@ -31,8 +33,11 @@ interface NotificationStore {
   clearAll: () => void;
   toggleNotifications: () => void;
   setSoundEnabled: (enabled: boolean) => void;
-  setSound: (sound: NotificationSound, customUrl?: string) => void;
+  setSound: (sound: NotificationSound, customUrl?: string, customName?: string) => void;
   playTestSound: () => void;
+  stopSound: () => void;
+  uploadCustomSound: (file: File) => Promise<boolean>;
+  removeCustomSound: () => void;
   
   // Message specific
   addMessageNotification: (message: {
@@ -54,6 +59,9 @@ const NOTIFICATION_SOUNDS: Record<NotificationSound, string> = {
   custom: ''
 };
 
+// Current audio instance for playback control
+let currentAudio: HTMLAudioElement | null = null;
+
 export const useNotificationStore = create<NotificationStore>((set, get) => ({
   notifications: [],
   unreadCount: 0,
@@ -61,6 +69,8 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
   soundEnabled: true,
   selectedSound: 'whatsapp',
   customSoundUrl: undefined,
+  customSoundName: undefined,
+  isPlayingSound: false,
 
   addNotification: (notification) => {
     const newNotification: Notification = {
@@ -145,20 +155,30 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
     localStorage.setItem('notificationSoundEnabled', enabled ? 'true' : 'false');
   },
 
-  setSound: (sound, customUrl) => {
+  setSound: (sound, customUrl, customName) => {
     set({ 
       selectedSound: sound,
-      customSoundUrl: customUrl
+      customSoundUrl: customUrl,
+      customSoundName: customName
     });
     localStorage.setItem('notificationSoundType', sound);
     if (customUrl) {
       localStorage.setItem('customNotificationSound', customUrl);
+    }
+    if (customName) {
+      localStorage.setItem('customNotificationSoundName', customName);
     }
   },
 
   playTestSound: () => {
     const state = get();
     if (!state.soundEnabled || typeof window === 'undefined') return;
+
+    // Stop any currently playing sound
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    }
 
     try {
       let audioUrl = '';
@@ -169,14 +189,107 @@ export const useNotificationStore = create<NotificationStore>((set, get) => ({
         audioUrl = NOTIFICATION_SOUNDS[state.selectedSound] || NOTIFICATION_SOUNDS.default;
       }
       
-      const audio = new Audio(audioUrl);
-      audio.volume = 0.5;
-      audio.play().catch(() => {
+      currentAudio = new Audio(audioUrl);
+      currentAudio.volume = 0.5;
+      
+      set({ isPlayingSound: true });
+      
+      currentAudio.onended = () => {
+        set({ isPlayingSound: false });
+        currentAudio = null;
+      };
+      
+      currentAudio.onerror = () => {
+        set({ isPlayingSound: false });
+        currentAudio = null;
+        console.log('Could not play notification sound');
+      };
+      
+      currentAudio.play().catch(() => {
+        set({ isPlayingSound: false });
+        currentAudio = null;
         console.log('Could not play notification sound');
       });
     } catch (error) {
+      set({ isPlayingSound: false });
       console.log('Error playing notification sound:', error);
     }
+  },
+
+  stopSound: () => {
+    if (currentAudio) {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+      currentAudio = null;
+    }
+    set({ isPlayingSound: false });
+  },
+
+  uploadCustomSound: async (file: File) => {
+    return new Promise<boolean>((resolve) => {
+      try {
+        // Validate file type
+        if (!file.type.startsWith('audio/')) {
+          console.log('Invalid file type. Please select an audio file.');
+          resolve(false);
+          return;
+        }
+
+        // Validate file size (max 5MB)
+        if (file.size > 5 * 1024 * 1024) {
+          console.log('File too large. Please select a file smaller than 5MB.');
+          resolve(false);
+          return;
+        }
+
+        const reader = new FileReader();
+        
+        reader.onload = (e) => {
+          const audioUrl = e.target?.result as string;
+          const fileName = file.name;
+          
+          // Test if audio can be played
+          const testAudio = new Audio(audioUrl);
+          
+          testAudio.oncanplaythrough = () => {
+            get().setSound('custom', audioUrl, fileName);
+            resolve(true);
+          };
+          
+          testAudio.onerror = () => {
+            console.log('Invalid audio file format');
+            resolve(false);
+          };
+          
+          // Set a timeout for loading
+          setTimeout(() => {
+            console.log('Audio loading timeout');
+            resolve(false);
+          }, 5000);
+        };
+        
+        reader.onerror = () => {
+          console.log('Error reading file');
+          resolve(false);
+        };
+        
+        reader.readAsDataURL(file);
+      } catch (error) {
+        console.log('Error uploading custom sound:', error);
+        resolve(false);
+      }
+    });
+  },
+
+  removeCustomSound: () => {
+    set({ 
+      selectedSound: 'whatsapp',
+      customSoundUrl: undefined,
+      customSoundName: undefined
+    });
+    localStorage.removeItem('customNotificationSound');
+    localStorage.removeItem('customNotificationSoundName');
+    localStorage.setItem('notificationSoundType', 'whatsapp');
   }
 }));
 
@@ -192,8 +305,9 @@ if (typeof window !== 'undefined') {
   
   // Sound type
   const savedSoundType = localStorage.getItem('notificationSoundType') as NotificationSound;
-  if (savedSoundType && NOTIFICATION_SOUNDS[savedSoundType]) {
+  if (savedSoundType && (NOTIFICATION_SOUNDS[savedSoundType] !== undefined || savedSoundType === 'custom')) {
     const customUrl = localStorage.getItem('customNotificationSound');
-    store.setSound(savedSoundType, customUrl || undefined);
+    const customName = localStorage.getItem('customNotificationSoundName');
+    store.setSound(savedSoundType, customUrl || undefined, customName || undefined);
   }
 }

@@ -54,26 +54,10 @@ export const instanceService = {
     return response.data;
   },
 
-  // WAHA - Instâncias WhatsApp
-  async getInstances(): Promise<WAHAInstance[]> {
-    const response = await api.get('/waha/sessions');
-    
-    // Transformar resposta da API para o formato esperado
-    if (response.data.success && response.data.sessions) {
-      return response.data.sessions.map((session: any) => ({
-        id: session.name,
-        name: session.name,
-        status: session.status === 'WORKING' ? 'connected' : 
-                session.status === 'SCAN_QR_CODE' ? 'qr_code' :
-                session.status === 'STARTING' ? 'connecting' : 'disconnected',
-        number: session.me?.id || session.me?.number || null,
-        messagesCount: session.messageCount || 0,
-        lastSeen: session.lastSeen || null,
-        metadata: session.config?.metadata || {}
-      }));
-    }
-    
-    return [];
+  // WhatsApp - Instâncias
+  async getInstances(): Promise<any[]> {
+    const response = await api.get('/whatsapp/instances');
+    return response.data.data || [];
   },
 
   async createInstance(numberId: string, name: string): Promise<{
@@ -108,11 +92,16 @@ export const instanceService = {
     success: boolean;
     message?: string;
   }> {
-    // Será implementado com WAHA
-    return {
-      success: true,
-      message: 'Instância removida'
-    };
+    const response = await api.delete(`/whatsapp/instances/${instanceId}`);
+    return response.data;
+  },
+
+  async disconnectInstance(instanceId: string): Promise<{
+    success: boolean;
+    message?: string;
+  }> {
+    const response = await api.post(`/whatsapp/instances/${instanceId}/disconnect`);
+    return response.data;
   },
 
   // Criar número virtual na Salvy após pagamento

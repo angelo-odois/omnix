@@ -62,7 +62,7 @@ class WhatsAppWebhookHandler {
       // Handle different event types
       switch (event.event) {
         case 'session.status':
-          await this.handleSessionStatusEvent(instance.id, event.payload);
+          await this.handleSessionStatusEvent(instance.id, event.payload, sessionName);
           break;
           
         case 'session.qr':
@@ -88,24 +88,39 @@ class WhatsAppWebhookHandler {
     }
   }
 
-  private async handleSessionStatusEvent(instanceId: string, payload: WAHASessionEvent) {
+  private async handleSessionStatusEvent(instanceId: string, payload: WAHASessionEvent, sessionName: string) {
     console.log(`📱 Session status update for ${instanceId}:`, payload.status);
 
     let status = 'disconnected';
     let phoneNumber = null;
+    let qrCode = undefined;
 
     switch (payload.status) {
       case 'STOPPED':
         status = 'disconnected';
         break;
       case 'STARTING':
+        status = 'connecting';
+        break;
       case 'SCAN_QR_CODE':
         status = 'connecting';
+        // When status is SCAN_QR_CODE, fetch QR code from WAHA
+        try {
+          const freshQRCode = await wahaClient.getQRCode(sessionName);
+          if (freshQRCode) {
+            qrCode = freshQRCode;
+            console.log(`📱 QR Code fetched for instance ${instanceId}`);
+          }
+        } catch (error) {
+          console.error(`❌ Error fetching QR code for instance ${instanceId}:`, error);
+        }
         break;
       case 'WORKING':
         status = 'connected';
         // Extract phone number from session info if available
         phoneNumber = payload.name || null;
+        // Clear QR code when connected
+        qrCode = null;
         break;
       case 'FAILED':
         status = 'error';
@@ -118,12 +133,11 @@ class WhatsAppWebhookHandler {
         status,
         phoneNumber,
         lastSeen: new Date(),
-        // Clear QR code when connected
-        qrCode: status === 'connected' ? null : undefined
+        ...(qrCode !== undefined && { qrCode })
       }
     });
 
-    console.log(`✅ Instance ${instanceId} status updated: ${status}`);
+    console.log(`✅ Instance ${instanceId} status updated: ${status}${qrCode ? ' with QR code' : ''}`);
   }
 
   private async handleQRCodeEvent(instanceId: string, payload: any) {
@@ -155,11 +169,21 @@ class WhatsAppWebhookHandler {
         return;
       }
 
+      // Get instance to access settings
+      const instance = await prisma.whatsAppInstance.findUnique({
+        where: { id: instanceId }
+      });
+
+      if (!instance) {
+        console.error(`❌ Instance ${instanceId} not found for message handling`);
+        return;
+      }
+
       // Extract phone number from WhatsApp format
       const phoneNumber = payload.from.replace('@c.us', '');
       
       // Get WhatsApp profile info for better contact identification
-      let contactName = payload.pushName || payload.notifyName || phoneNumber;
+      let contactName = (payload as any).pushName || (payload as any).notifyName || phoneNumber;
       let profilePicUrl = null;
       
       // Get session name from instance
@@ -181,7 +205,7 @@ class WhatsAppWebhookHandler {
             profilePicUrl = profilePic;
             console.log(`🖼️ Profile pic found for ${contactName}`);
           }
-        } catch (error) {
+        } catch (error: any) {
           console.log(`⚠️ Could not fetch WhatsApp profile for ${phoneNumber}:`, error.message);
         }
       }
@@ -204,7 +228,7 @@ class WhatsAppWebhookHandler {
             }
           });
           console.log(`✅ Profile pic updated for ${contactName}`);
-        } catch (error) {
+        } catch (error: any) {
           console.log(`⚠️ Could not update profile pic:`, error.message);
         }
       }

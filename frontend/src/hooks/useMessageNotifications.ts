@@ -3,21 +3,17 @@ import { useNotificationStore } from '../store/notificationStore';
 import { api } from '../lib/api';
 import { useAuthStore } from '../store/authStore';
 
-interface Message {
+interface RecentMessage {
   id: string;
   conversationId: string;
   from: string;
   content: string;
-  isInbound: boolean;
   timestamp: string;
-}
-
-interface Conversation {
-  id: string;
-  contactPhone: string;
-  contactName?: string;
-  unreadCount: number;
-  lastMessageAt: string;
+  conversation: {
+    id: string;
+    contactName?: string;
+    contactPhone: string;
+  };
 }
 
 export default function useMessageNotifications() {
@@ -36,39 +32,22 @@ export default function useMessageNotifications() {
       try {
         const lastCheck = lastCheckRef.current;
         
-        // Get conversations with unread messages
-        const conversationsResponse = await api.get('/messages/conversations');
-        const conversations: Conversation[] = conversationsResponse.data.data || [];
+        // Get recent messages since last check
+        const response = await api.get(`/messages/recent?since=${lastCheck.toISOString()}`);
+        const messages = response.data.data || [];
         
-        // Find conversations with unread messages
-        const unreadConversations = conversations.filter(conv => conv.unreadCount > 0);
+        console.log(`📱 Checking for messages since ${lastCheck.toISOString()}, found ${messages.length} new messages`);
         
-        for (const conversation of unreadConversations) {
-          try {
-            // Get recent messages from this conversation
-            const messagesResponse = await api.get(`/messages/conversations/${conversation.id}/messages?limit=5`);
-            const messages: Message[] = messagesResponse.data.data || [];
-            
-            // Find new inbound messages since last check
-            const newMessages = messages.filter(msg => 
-              msg.isInbound && 
-              new Date(msg.timestamp) > lastCheck
-            );
-            
-            // Create notifications for new messages
-            for (const message of newMessages) {
-              addMessageNotification({
-                from: conversation.contactName || conversation.contactPhone,
-                content: message.content,
-                conversationId: conversation.id,
-                avatar: undefined // Will be enhanced with contact avatar later
-              });
-              
-              console.log(`🔔 Nova mensagem de ${conversation.contactName}: ${message.content.substring(0, 30)}...`);
-            }
-          } catch (error) {
-            console.error('Error checking messages for conversation:', conversation.id, error);
-          }
+        // Create notifications for new messages
+        for (const message of messages) {
+          addMessageNotification({
+            from: message.from,
+            content: message.content,
+            conversationId: message.conversationId,
+            avatar: undefined // Will be enhanced with contact avatar later
+          });
+          
+          console.log(`🔔 Nova mensagem de ${message.from}: ${message.content.substring(0, 30)}...`);
         }
         
         // Update last check time

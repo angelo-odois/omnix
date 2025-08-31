@@ -353,6 +353,47 @@ class WhatsAppService {
 
     return true;
   }
+
+  async terminateInstance(instanceId: string): Promise<boolean> {
+    const instance = await prisma.whatsAppInstance.findUnique({
+      where: { id: instanceId }
+    });
+
+    if (!instance) {
+      throw new Error('Instância não encontrada');
+    }
+
+    const settings = instance.settings as any;
+    const sessionName = settings?.wahaSession;
+
+    try {
+      // Try to delete session in WAHA first
+      if (sessionName) {
+        try {
+          await wahaClient.deleteSession(sessionName);
+          console.log(`WAHA session ${sessionName} deleted successfully`);
+        } catch (wahaError) {
+          console.warn('Failed to delete WAHA session, continuing with database cleanup:', wahaError);
+        }
+      }
+
+      // Delete related conversations and messages
+      await prisma.conversation.deleteMany({
+        where: { whatsappInstanceId: instanceId }
+      });
+
+      // Delete the instance from database
+      await prisma.whatsAppInstance.delete({
+        where: { id: instanceId }
+      });
+
+      console.log(`WhatsApp instance ${instanceId} terminated successfully`);
+      return true;
+    } catch (error) {
+      console.error('Error terminating WhatsApp instance:', error);
+      throw error;
+    }
+  }
 }
 
 export const whatsappService = new WhatsAppService();

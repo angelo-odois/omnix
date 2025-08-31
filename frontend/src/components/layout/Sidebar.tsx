@@ -68,6 +68,13 @@ const navItems: NavItem[] = [
     roles: ['super_admin', 'tenant_admin'],
     description: 'Configurações do sistema'
   },
+  { 
+    label: 'Todas Instâncias', 
+    icon: Phone, 
+    path: '/all-instances', 
+    roles: ['super_admin'],
+    description: 'Gerenciar todas as instâncias'
+  },
 ];
 
 export default function Sidebar() {

@@ -16,6 +16,7 @@ import Workflows from './pages/Workflows';
 import AdminDashboard from './pages/AdminDashboard';
 import ModuleMarketplace from './pages/ModuleMarketplace';
 import Settings from './pages/Settings';
+import AllInstances from './pages/AllInstances';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,11 @@ function App() {
             <Route path="settings" element={
               <ProtectedRoute roles={['super_admin', 'tenant_admin']}>
                 <Settings />
+              </ProtectedRoute>
+            } />
+            <Route path="all-instances" element={
+              <ProtectedRoute roles={['super_admin']}>
+                <AllInstances />
               </ProtectedRoute>
             } />
           </Route>

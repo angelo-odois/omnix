@@ -73,6 +73,52 @@ export default function WhatsAppInstances() {
     }
   };
 
+  const pollForQRCode = async (instanceId: string) => {
+    let attempts = 0;
+    const maxAttempts = 30;
+    
+    const poll = async () => {
+      if (attempts >= maxAttempts) {
+        console.log('Max polling attempts reached for QR code');
+        return;
+      }
+      
+      try {
+        const response = await api.get(`/whatsapp/instances/${instanceId}/qr`);
+        const { qrCode, status } = response.data.data;
+        
+        if (qrCode && qrCode !== 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzM3NDE1MSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkdlcmFuZG8gUVIgQ29kZS4uLjwvdGV4dD48L3N2Zz4=') {
+          setInstances(prev => prev.map(inst => 
+            inst.id === instanceId 
+              ? { ...inst, qrCode, status: status || 'connecting' }
+              : inst
+          ));
+          
+          if (showQRModal && showQRModal.id === instanceId) {
+            setShowQRModal(prev => prev ? { ...prev, qrCode, status: status || 'connecting' } : null);
+          }
+          
+          if (status === 'connected') {
+            return;
+          }
+        }
+        
+        if (status === 'connected' || status === 'error') {
+          return;
+        }
+        
+        attempts++;
+        setTimeout(poll, 2000);
+      } catch (error) {
+        console.error('Error polling QR code:', error);
+        attempts++;
+        setTimeout(poll, 2000);
+      }
+    };
+    
+    setTimeout(poll, 1000);
+  };
+
   const connectInstance = async (instanceId: string) => {
     try {
       setConnecting(instanceId);
@@ -96,6 +142,9 @@ export default function WhatsAppInstances() {
           status: 'connecting'
         });
       }
+
+      // Start polling for QR code updates
+      pollForQRCode(instanceId);
 
     } catch (err: any) {
       setError(err.response?.data?.message || 'Erro ao conectar instância');

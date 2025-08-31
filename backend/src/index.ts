@@ -13,6 +13,7 @@ import tenantModuleRoutes from './routes/tenantModuleRoutes';
 import whatsappRoutes from './modules/whatsapp/routes';
 import messagesRoutes from './modules/messages/routes';
 import contactsRoutes from './modules/contacts/routes';
+import dashboardRoutes from './routes/dashboardRoutes';
 import emailService from './services/emailService';
 
 dotenv.config();
@@ -54,6 +55,7 @@ app.use('/api/tenant', tenantModuleRoutes); // Self-service de módulos para ten
 app.use('/api/whatsapp', whatsappRoutes); // WhatsApp instance management
 app.use('/api/messages', messagesRoutes); // Message and conversation management
 app.use('/api/contacts', contactsRoutes); // Contact management
+app.use('/api/dashboard', dashboardRoutes); // Dashboard metrics and data
 
 // Health check
 app.get('/health', (req, res) => {

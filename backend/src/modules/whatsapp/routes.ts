@@ -42,17 +42,53 @@ router.post('/sync', authenticate, async (req: AuthRequest, res: Response) => {
 
 // ============= WHATSAPP INSTANCE MANAGEMENT (AUTH REQUIRED) =============
 
-// Get all instances for tenant
-router.get('/instances', authenticate, requireModule(SYSTEM_MODULES.WHATSAPP, 'read'), async (req: AuthRequest, res: Response) => {
+// Get all instances for tenant (or all for super admin)
+router.get('/instances', authenticate, async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user?.tenantId) {
-      return res.status(400).json({
-        success: false,
-        message: 'Tenant não identificado'
+    let instances;
+    
+    if (req.user?.role === 'super_admin') {
+      // Super admin can see all instances from all tenants
+      instances = await prisma.whatsAppInstance.findMany({
+        include: {
+          tenant: {
+            select: {
+              id: true,
+              name: true,
+              email: true
+            }
+          }
+        },
+        orderBy: { createdAt: 'desc' }
       });
+      
+      // Format for super admin view
+      instances = instances.map(instance => ({
+        id: instance.id,
+        tenantId: instance.tenantId,
+        tenantName: instance.tenant?.name,
+        tenantEmail: instance.tenant?.email,
+        name: instance.name,
+        phoneNumber: instance.phoneNumber || undefined,
+        status: instance.status,
+        qrCode: instance.qrCode || undefined,
+        lastSeen: instance.lastSeen || undefined,
+        webhookUrl: instance.webhookUrl || undefined,
+        settings: instance.settings || {},
+        createdAt: instance.createdAt,
+        updatedAt: instance.updatedAt
+      }));
+    } else {
+      // Regular users see only their tenant's instances
+      if (!req.user?.tenantId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Tenant não identificado'
+        });
+      }
+      
+      instances = await whatsappService.getInstances(req.user.tenantId);
     }
-
-    const instances = await whatsappService.getInstances(req.user.tenantId);
     
     res.json({
       success: true,
@@ -159,6 +195,46 @@ router.get('/instances/:id/status', authenticate, requireModule(SYSTEM_MODULES.W
     res.status(400).json({
       success: false,
       message: error.message || 'Erro ao obter status'
+    });
+  }
+});
+
+// Delete (terminate) instance permanently
+router.delete('/instances/:id', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    // Find instance (no tenant restriction for super admin)
+    const instance = await prisma.whatsAppInstance.findUnique({
+      where: { id }
+    });
+
+    if (!instance) {
+      return res.status(404).json({
+        success: false,
+        message: 'Instância não encontrada'
+      });
+    }
+
+    // Check permissions: super admin can delete any instance, others only their tenant's
+    if (req.user?.role !== 'super_admin' && req.user?.tenantId !== instance.tenantId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Sem permissão para encerrar esta instância'
+      });
+    }
+
+    const success = await whatsappService.terminateInstance(id);
+    
+    res.json({
+      success,
+      message: success ? 'Instância encerrada permanentemente' : 'Falha ao encerrar instância'
+    });
+  } catch (error: any) {
+    console.error('Error terminating WhatsApp instance:', error);
+    res.status(400).json({
+      success: false,
+      message: error.message || 'Erro ao encerrar instância'
     });
   }
 });

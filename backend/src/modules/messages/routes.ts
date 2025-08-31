@@ -122,6 +122,67 @@ router.get('/search', requireModule(SYSTEM_MODULES.MESSAGES, 'read'), async (req
   }
 });
 
+// Get recent messages for notifications
+router.get('/recent', requireModule(SYSTEM_MODULES.MESSAGES, 'read'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tenant não identificado'
+      });
+    }
+
+    const { since } = req.query;
+    const sinceDate = since ? new Date(since as string) : new Date(Date.now() - 30000); // Last 30 seconds
+
+    // Get recent messages from conversations with tenant
+    const messages = await prisma.message.findMany({
+      where: {
+        tenantId: req.user.tenantId,
+        isInbound: true,
+        createdAt: {
+          gt: sinceDate
+        }
+      },
+      include: {
+        conversation: {
+          select: {
+            id: true,
+            contactPhone: true,
+            contactName: true
+          }
+        }
+      },
+      orderBy: {
+        createdAt: 'desc'
+      },
+      take: 10
+    });
+
+    res.json({
+      success: true,
+      data: messages.map(msg => ({
+        id: msg.id,
+        conversationId: msg.conversationId,
+        from: msg.conversation.contactName || msg.conversation.contactPhone,
+        content: msg.content,
+        timestamp: msg.createdAt,
+        conversation: {
+          id: msg.conversation.id,
+          contactName: msg.conversation.contactName,
+          contactPhone: msg.conversation.contactPhone
+        }
+      }))
+    });
+  } catch (error: any) {
+    console.error('Error fetching recent messages:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao buscar mensagens recentes'
+    });
+  }
+});
+
 // ============= TESTING & SIMULATION =============
 
 // Simulate new message (for testing notifications)
