@@ -1,6 +1,5 @@
 import OpenAI from 'openai';
 import aiPromptService, { AIPromptTemplate, AIScript } from './aiPromptService';
-import aiCacheService from './aiCacheService';
 
 interface SentimentAnalysis {
   sentiment: 'positive' | 'negative' | 'neutral';
@@ -113,7 +112,8 @@ Analise o sentimento considerando TODA a evolução da conversa acima:`
       };
 
     } catch (error: any) {
-      console.error('OpenAI sentiment analysis error:', error);
+      console.error('OpenAI sentiment analysis error:', error.message || error);
+      console.log('🔄 Using mock sentiment analysis as fallback');
       return this.getMockSentiment();
     }
   }
@@ -124,26 +124,10 @@ Analise o sentimento considerando TODA a evolução da conversa acima:`
     contactName?: string,
     businessContext?: string,
     tenantId?: string,
-    customPromptId?: string,
-    conversationId?: string
+    customPromptId?: string
   ): Promise<ResponseSuggestion[]> {
     if (!process.env.OPENAI_API_KEY) {
       return this.getMockSuggestions(contactName || 'Cliente');
-    }
-
-    // Check cache first if conversationId is provided
-    if (conversationId) {
-      const cachedAnalysis = await aiCacheService.getCachedAnalysis(
-        conversationId,
-        messages,
-        contactName,
-        customPromptId
-      );
-      
-      if (cachedAnalysis) {
-        console.log('🎯 Using cached AI analysis - saving OpenAI credits');
-        return cachedAnalysis.suggestions || [];
-      }
     }
 
     try {
@@ -245,29 +229,11 @@ Gere 3 sugestões que considerem TODA a conversa acima:`;
         context: suggestion.context || 'Sugestão baseada no contexto da conversa'
       }));
 
-      // Cache the result if conversationId is provided
-      if (conversationId) {
-        console.log('💾 Caching new AI analysis to save future credits');
-        await aiCacheService.setCachedAnalysis(
-          conversationId,
-          messages,
-          {
-            sentiment,
-            suggestions: formattedSuggestions,
-            insights: [] // Would include insights if generated
-          },
-          {
-            customerName: contactName,
-            businessContext,
-            promptUsed: customPromptId
-          }
-        );
-      }
-
       return formattedSuggestions;
 
     } catch (error: any) {
-      console.error('OpenAI response generation error:', error);
+      console.error('OpenAI response generation error:', error.message || error);
+      console.log('🔄 Using mock suggestions as fallback');
       return this.getMockSuggestions(contactName || 'Cliente');
     }
   }

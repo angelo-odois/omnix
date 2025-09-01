@@ -12,7 +12,12 @@ import {
   CheckCircle,
   AlertCircle,
   Copy,
-  Edit
+  Edit,
+  Bot,
+  MessageSquare,
+  Star,
+  ShoppingCart,
+  BarChart3
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { workflowService } from '../services/workflowService';
@@ -20,6 +25,7 @@ import type { Workflow, WorkflowTemplate, WorkflowCategory } from '../types/work
 import Button from '../components/ui/Button';
 import { WorkflowEditorProvider } from '../components/workflow/WorkflowEditor';
 import CreateWorkflowModal from '../components/workflow/CreateWorkflowModal';
+import { whatsappTemplates } from '../components/workflow/templates/WhatsAppTemplates';
 
 export default function Workflows() {
   const queryClient = useQueryClient();

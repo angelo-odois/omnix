@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Package, TenantAdmin, Permission, Role, AdminStats, PackageFeature, PackageLimits, TenantUsage, TenantSettings, PackageModule } from '../types/admin';
 import { SYSTEM_MODULES } from '../types/modules';
 import { authServiceV2 } from './authServiceV2';
+import prisma from '../lib/database';
 
 class AdminService {
   private packages: Map<string, Package> = new Map();
@@ -295,30 +296,33 @@ class AdminService {
   }
 
   async getAllTenants(): Promise<TenantAdmin[]> {
-    // Combinar tenants do adminService com os do authServiceV2
-    const adminTenants = Array.from(this.tenantsAdmin.values());
-    const authTenants = authServiceV2.getAllTenants();
-    
-    // Converter tenants do authService para formato TenantAdmin
-    const convertedAuthTenants: TenantAdmin[] = authTenants
-      .filter(authTenant => !adminTenants.find(adminTenant => adminTenant.slug === authTenant.slug))
-      .map(authTenant => ({
-        id: authTenant.id,
-        name: authTenant.name,
-        slug: authTenant.slug,
-        email: authTenant.email || `${authTenant.slug}@example.com`,
-        packageId: 'pkg-starter', // Default package for existing tenants
+    try {
+      // Get tenants from database
+      const dbTenants = await prisma.tenant.findMany({
+        orderBy: { createdAt: 'desc' }
+      });
+      
+      // Convert to TenantAdmin format with default usage
+      const adminTenants: TenantAdmin[] = dbTenants.map(tenant => ({
+        id: tenant.id,
+        name: tenant.name,
+        slug: tenant.domain || tenant.name.toLowerCase().replace(/\s+/g, '-'),
+        domain: tenant.domain || '',
+        email: tenant.email,
+        packageId: tenant.packageId,
+        isActive: tenant.isActive,
+        plan: 'premium', // Default for now
         status: 'active' as const,
         billingStatus: 'current' as const,
         usage: {
-          currentUsers: 1, // Placeholder - será calculado em tempo real
+          currentUsers: 0,
           currentInstances: 0,
           messagesThisMonth: 0,
           currentContacts: 0,
           currentWorkflows: 0,
           currentIntegrations: 0,
           storageUsedGB: 0,
-          lastCalculatedAt: new Date(),
+          lastCalculatedAt: new Date()
         },
         settings: {
           allowUserRegistration: true,
@@ -329,16 +333,20 @@ class AdminService {
           enableWorkflows: true,
           enableAPI: false,
           customBranding: { enabled: false },
-          webhooks: { enabled: false },
+          webhooks: { enabled: false }
         },
-        createdAt: authTenant.createdAt,
-        updatedAt: authTenant.updatedAt,
+        createdAt: tenant.createdAt.toISOString(),
+        updatedAt: tenant.updatedAt.toISOString(),
         createdBy: 'system',
+        users: [],
+        instances: []
       }));
 
-    // Combinar e ordenar por data de criação
-    const allTenants = [...adminTenants, ...convertedAuthTenants];
-    return allTenants.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+      return adminTenants;
+    } catch (error) {
+      console.error('Error fetching tenants:', error);
+      return [];
+    }
   }
 
   async getTenantById(id: string): Promise<TenantAdmin | undefined> {

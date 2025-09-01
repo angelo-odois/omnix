@@ -1,0 +1,1852 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omnix - Plataforma Completa de Atendimento WhatsApp para Empresas</title>
+    <meta name="description" content="Transforme seu atendimento WhatsApp com múltiplos operadores, automação inteligente e workflows personalizados. Trial grátis de 7 dias.">
+    <meta name="keywords" content="whatsapp business, atendimento whatsapp, múltiplos operadores, automação whatsapp, CRM whatsapp">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://omnix.com.br/">
+    <meta property="og:title" content="Omnix - Atendimento WhatsApp Multioperador">
+    <meta property="og:description" content="Plataforma completa para atendimento WhatsApp com múltiplos operadores e automação inteligente.">
+    <meta property="og:image" content="https://omnix.com.br/og-image.jpg">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://omnix.com.br/">
+    <meta property="twitter:title" content="Omnix - Atendimento WhatsApp Multioperador">
+    <meta property="twitter:description" content="Plataforma completa para atendimento WhatsApp com múltiplos operadores e automação inteligente.">
+    
+    <!-- Security Headers -->
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Strict-Transport-Security" content="max-age=31536000; includeSubDomains">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #25D366;
+            --primary-dark: #128C7E;
+            --secondary: #075E54;
+            --dark: #1C1E21;
+            --light: #F8F9FA;
+            --gray: #6C757D;
+            --white: #FFFFFF;
+            --gradient: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+            --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            background: var(--white);
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+            z-index: 1000;
+            transition: var(--transition);
+        }
+
+        header.scrolled {
+            box-shadow: 0 2px 20px rgba(0,0,0,0.08);
+            background: rgba(255,255,255,0.98);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0;
+            height: 60px;
+        }
+
+        .logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: var(--gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            letter-spacing: -0.5px;
+            position: relative;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2.25rem;
+            align-items: center;
+        }
+
+        .nav-links a:not(.btn) {
+            color: var(--dark);
+            text-decoration: none;
+            font-weight: 450;
+            font-size: 0.925rem;
+            transition: var(--transition);
+            position: relative;
+            padding: 0.5rem 0;
+            opacity: 0.85;
+            letter-spacing: -0.01em;
+        }
+
+        .nav-links a:not(.btn):hover {
+            color: var(--primary);
+            opacity: 1;
+        }
+
+        .nav-links a:not(.btn)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s;
+        }
+
+        .nav-links a:not(.btn):hover::after {
+            width: 100%;
+        }
+
+        .nav-links .btn-header {
+            padding: 0.45rem 1.15rem;
+            font-size: 0.85rem;
+            font-weight: 550;
+            border-radius: 6px;
+            margin-left: 2rem;
+            box-shadow: 0 1px 3px rgba(37, 211, 102, 0.2);
+            position: relative;
+        }
+
+        .nav-links .btn-header::before {
+            content: '';
+            position: absolute;
+            left: -1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            height: 20px;
+            background: rgba(0,0,0,0.08);
+        }
+
+        .nav-links .btn-header:hover {
+            box-shadow: 0 2px 8px rgba(37, 211, 102, 0.3);
+            transform: translateY(-0.5px);
+        }
+
+        /* Mobile Menu Button */
+        .mobile-menu-btn {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        .mobile-menu-btn span {
+            width: 20px;
+            height: 2px;
+            background: var(--dark);
+            margin: 3px 0;
+            transition: var(--transition);
+            border-radius: 2px;
+        }
+
+        .mobile-menu-btn:hover span {
+            background: var(--primary);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient);
+            color: var(--white);
+            box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 110px 0 80px;
+            background: linear-gradient(135deg, #F8F9FA 0%, #E9ECEF 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -10%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(37, 211, 102, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .hero-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-text h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, var(--dark) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-text .highlight {
+            color: var(--primary);
+            -webkit-text-fill-color: var(--primary);
+        }
+
+        .hero-text p {
+            font-size: 1.25rem;
+            color: var(--gray);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .trust-badges {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            padding-top: 2rem;
+            border-top: 1px solid #E9ECEF;
+        }
+
+        .trust-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+
+        .trust-badge svg {
+            width: 20px;
+            height: 20px;
+            color: var(--primary);
+        }
+
+        .hero-image {
+            position: relative;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .hero-image img {
+            width: 100%;
+            height: auto;
+            filter: drop-shadow(0 20px 40px rgba(0,0,0,0.1));
+        }
+
+        /* Mock Dashboard */
+        .dashboard-mock {
+            background: var(--white);
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            padding: 1.5rem;
+            position: relative;
+        }
+
+        .dashboard-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #E9ECEF;
+        }
+
+        .status-indicator {
+            width: 10px;
+            height: 10px;
+            background: #28A745;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(40, 167, 69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40, 167, 69, 0); }
+        }
+
+        .chat-preview {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .message {
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            max-width: 70%;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .message.received {
+            background: #F1F3F5;
+            align-self: flex-start;
+        }
+
+        .message.sent {
+            background: var(--primary);
+            color: var(--white);
+            align-self: flex-end;
+        }
+
+        /* Social Proof */
+        .social-proof {
+            padding: 4rem 0;
+            background: var(--white);
+            border-bottom: 1px solid #E9ECEF;
+        }
+
+        .social-proof-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 3rem;
+        }
+
+        .metric {
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--primary);
+            display: block;
+        }
+
+        .metric-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .logos {
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            justify-content: center;
+            margin-top: 3rem;
+            opacity: 0.6;
+            filter: grayscale(100%);
+            transition: var(--transition);
+        }
+
+        .logos:hover {
+            opacity: 1;
+            filter: grayscale(0%);
+        }
+
+        /* Features */
+        .features {
+            padding: 5rem 0;
+            background: #F8F9FA;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--gray);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient);
+            transform: scaleX(0);
+            transition: transform 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .feature-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, rgba(37, 211, 102, 0.1) 0%, rgba(18, 140, 126, 0.1) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .feature-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .feature-card p {
+            color: var(--gray);
+            line-height: 1.8;
+        }
+
+        .feature-card ul {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .feature-card li {
+            padding: 0.5rem 0;
+            color: var(--gray);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .feature-card li::before {
+            content: '✓';
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        /* Demo Section */
+        .demo {
+            padding: 5rem 0;
+            background: var(--white);
+        }
+
+        .demo-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .demo-video {
+            background: #F8F9FA;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .play-button {
+            width: 80px;
+            height: 80px;
+            background: var(--gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            box-shadow: 0 10px 30px rgba(37, 211, 102, 0.3);
+        }
+
+        .play-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(37, 211, 102, 0.4);
+        }
+
+        .play-button svg {
+            width: 30px;
+            height: 30px;
+            color: var(--white);
+            margin-left: 5px;
+        }
+
+        .demo-highlights h3 {
+            font-size: 2rem;
+            margin-bottom: 2rem;
+            color: var(--dark);
+        }
+
+        .highlight-item {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #F8F9FA;
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        .highlight-item:hover {
+            background: #E9ECEF;
+            transform: translateX(10px);
+        }
+
+        .highlight-number {
+            width: 40px;
+            height: 40px;
+            background: var(--gradient);
+            color: var(--white);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .highlight-content h4 {
+            margin-bottom: 0.5rem;
+            color: var(--dark);
+        }
+
+        .highlight-content p {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        /* Use Cases */
+        .use-cases {
+            padding: 5rem 0;
+            background: #F8F9FA;
+        }
+
+        .use-cases-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .use-case-card {
+            background: var(--white);
+            padding: 2rem;
+            border-radius: 12px;
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .use-case-card:hover {
+            transform: translateY(-10px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .use-case-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .use-case-card h3 {
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .use-case-card p {
+            color: var(--gray);
+            line-height: 1.8;
+        }
+
+        /* Pricing */
+        .pricing {
+            padding: 5rem 0;
+            background: var(--white);
+        }
+
+        .pricing-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+
+        .pricing-card {
+            background: var(--white);
+            border: 2px solid #E9ECEF;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            position: relative;
+            transition: var(--transition);
+        }
+
+        .pricing-card.featured {
+            border-color: var(--primary);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .pricing-card.featured::before {
+            content: 'MAIS POPULAR';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gradient);
+            color: var(--white);
+            padding: 0.25rem 1rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .pricing-card.featured:hover {
+            transform: scale(1.05) translateY(-5px);
+        }
+
+        .plan-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--dark);
+        }
+
+        .plan-price {
+            font-size: 3rem;
+            font-weight: 800;
+            color: var(--primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .plan-price span {
+            font-size: 1rem;
+            color: var(--gray);
+            font-weight: normal;
+        }
+
+        .plan-description {
+            color: var(--gray);
+            margin-bottom: 2rem;
+        }
+
+        .plan-features {
+            list-style: none;
+            margin-bottom: 2rem;
+        }
+
+        .plan-features li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #F8F9FA;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .plan-features li svg {
+            width: 20px;
+            height: 20px;
+            color: var(--primary);
+        }
+
+        /* Security Section */
+        .security {
+            padding: 5rem 0;
+            background: linear-gradient(135deg, #1C1E21 0%, #075E54 100%);
+            color: var(--white);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .security::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+        }
+
+        .security .section-header h2 {
+            color: var(--white);
+        }
+
+        .security .section-header p {
+            color: rgba(255,255,255,0.9);
+        }
+
+        .security-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .security-item {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: var(--transition);
+        }
+
+        .security-item:hover {
+            background: rgba(255,255,255,0.1);
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .security-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .security-item:nth-child(2) .security-icon { animation-delay: 1s; }
+        .security-item:nth-child(3) .security-icon { animation-delay: 2s; }
+        .security-item:nth-child(4) .security-icon { animation-delay: 3s; }
+        .security-item:nth-child(5) .security-icon { animation-delay: 4s; }
+        .security-item:nth-child(6) .security-icon { animation-delay: 5s; }
+
+        .security-item h3 {
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+            color: var(--white);
+        }
+
+        .security-item p {
+            color: rgba(255,255,255,0.9);
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* FAQ */
+        .faq {
+            padding: 5rem 0;
+            background: var(--white);
+        }
+
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .faq-item {
+            margin-bottom: 1rem;
+            border: 1px solid #E9ECEF;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .faq-item:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .faq-question {
+            padding: 1.5rem;
+            background: var(--white);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: var(--dark);
+            transition: var(--transition);
+        }
+
+        .faq-question:hover {
+            background: #F8F9FA;
+        }
+
+        .faq-question.active {
+            background: var(--primary);
+            color: var(--white);
+        }
+
+        .faq-arrow {
+            transition: transform 0.3s;
+        }
+
+        .faq-question.active .faq-arrow {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            padding: 0 1.5rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s, padding 0.3s;
+            color: var(--gray);
+            line-height: 1.8;
+        }
+
+        .faq-answer.active {
+            padding: 1.5rem;
+            max-height: 500px;
+        }
+
+        /* CTA Final */
+        .cta-final {
+            padding: 5rem 0;
+            background: var(--gradient);
+            text-align: center;
+            color: var(--white);
+        }
+
+        .cta-final h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .cta-final p {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .btn-white {
+            background: var(--white);
+            color: var(--primary);
+        }
+
+        .btn-white:hover {
+            background: #F8F9FA;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Footer */
+        footer {
+            padding: 3rem 0;
+            background: var(--dark);
+            color: var(--white);
+        }
+
+        .footer-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .footer-section h3 {
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+
+        .footer-section ul {
+            list-style: none;
+        }
+
+        .footer-section li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a {
+            color: rgba(255,255,255,0.8);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .footer-section a:hover {
+            color: var(--primary);
+        }
+
+        .footer-bottom {
+            text-align: center;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+            color: rgba(255,255,255,0.6);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #E9ECEF;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        }
+
+        /* Responsiveness */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: flex;
+            }
+
+            nav {
+                height: 56px;
+            }
+
+            .hero-content {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .hero-text h1 {
+                font-size: 2rem;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .demo-content {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-card.featured {
+                transform: scale(1);
+            }
+
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Cookie Consent */
+        .cookie-consent {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: var(--dark);
+            color: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+            z-index: 9999;
+            max-width: 400px;
+        }
+
+        .cookie-consent.show {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <nav class="container">
+            <a href="#" class="logo">Omnix</a>
+            <div class="nav-links">
+                <a href="#features">Recursos</a>
+                <a href="#pricing">Preços</a>
+                <a href="#security">Segurança</a>
+                <a href="#faq">FAQ</a>
+                <a href="#" class="btn btn-primary btn-header">Iniciar Teste</a>
+            </div>
+            <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1>Transforme seu Atendimento WhatsApp em uma <span class="highlight">Máquina de Vendas</span></h1>
+                    <p>Múltiplos operadores, múltiplos números, workflows inteligentes e automação que parece mágica. Tudo em uma única plataforma.</p>
+                    <div class="hero-buttons">
+                        <a href="#" class="btn btn-primary">
+                            Teste Grátis por 7 Dias
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                            </svg>
+                        </a>
+                        <a href="#demo" class="btn btn-secondary">Ver Demonstração</a>
+                    </div>
+                    <div class="trust-badges">
+                        <div class="trust-badge">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"></path>
+                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 1 1 0 000 2H6a2 2 0 100 4h2a2 2 0 100-4h2a1 1 0 100-2 2 2 0 00-2 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"></path>
+                            </svg>
+                            <span>Sem taxa de setup</span>
+                        </div>
+                        <div class="trust-badge">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"></path>
+                            </svg>
+                            <span>Plataforma 100% Segura</span>
+                        </div>
+                        <div class="trust-badge">
+                            <svg fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M2 10.586l1.293-1.293a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414zM10 2a1 1 0 011 1v4a1 1 0 11-2 0V3a1 1 0 011-1zM16.707 8.293a1 1 0 010 1.414l-3 3a1 1 0 01-1.414-1.414l3-3a1 1 0 011.414 0z"></path>
+                            </svg>
+                            <span>Suporte 24/7</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hero-image">
+                    <div class="dashboard-mock">
+                        <div class="dashboard-header">
+                            <div class="status-indicator"></div>
+                            <span style="font-weight: 600;">WhatsApp Conectado</span>
+                            <span style="margin-left: auto; color: var(--gray); font-size: 0.9rem;">3 operadores online</span>
+                        </div>
+                        <div class="chat-preview">
+                            <div class="message received">Olá! Gostaria de saber mais sobre os planos</div>
+                            <div class="message sent" style="animation-delay: 0.5s;">👤 Atendente: João — Vendas<br>Olá! Claro, vou te ajudar com isso! 😊</div>
+                            <div class="message sent" style="animation-delay: 1s;">Temos 3 planos principais...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Social Proof -->
+    <section class="social-proof">
+        <div class="container">
+            <div class="social-proof-content">
+                <div class="metric">
+                    <span class="metric-value">500K+</span>
+                    <span class="metric-label">Mensagens/mês</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">2.5K+</span>
+                    <span class="metric-label">Empresas Ativas</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">98%</span>
+                    <span class="metric-label">Satisfação</span>
+                </div>
+                <div class="metric">
+                    <span class="metric-value">< 1s</span>
+                    <span class="metric-label">Tempo de Resposta</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Como Funciona</h2>
+                <p>Recursos poderosos que transformam conversas em resultados</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">👥</div>
+                    <h3>Multioperador Inteligente</h3>
+                    <p>Vários atendentes no mesmo número WhatsApp, com distribuição automática e colaboração em tempo real.</p>
+                    <ul>
+                        <li>Round-robin ou menos ocupado</li>
+                        <li>Presença em tempo real</li>
+                        <li>Transferência entre equipes</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📱</div>
+                    <h3>Múltiplos Números</h3>
+                    <p>Gerencie vários números WhatsApp em uma única plataforma, com seleção dinâmica por operador.</p>
+                    <ul>
+                        <li>Números digitais disponíveis</li>
+                        <li>Troca em tempo real</li>
+                        <li>Gestão centralizada</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🤖</div>
+                    <h3>Workflows "IA-like"</h3>
+                    <p>Automações visuais que dão sensação de inteligência artificial, sem complexidade técnica.</p>
+                    <ul>
+                        <li>Editor visual intuitivo</li>
+                        <li>Templates prontos</li>
+                        <li>Respostas contextuais</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔐</div>
+                    <h3>Segurança Enterprise</h3>
+                    <p>Proteção de nível empresarial, conformidade total com LGPD e controles de acesso granulares.</p>
+                    <ul>
+                        <li>Dados totalmente protegidos</li>
+                        <li>Auditoria completa</li>
+                        <li>Backups automáticos</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔌</div>
+                    <h3>Conectividade Robusta</h3>
+                    <p>Conexão estável e confiável com o WhatsApp, garantindo entrega de mensagens em tempo real.</p>
+                    <ul>
+                        <li>Conexão estável 24/7</li>
+                        <li>Entrega garantida</li>
+                        <li>Status em tempo real</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3>CRM Integrado</h3>
+                    <p>Gestão completa de contatos com enriquecimento automático e histórico detalhado.</p>
+                    <ul>
+                        <li>Tags e segmentação</li>
+                        <li>Campos personalizados</li>
+                        <li>Busca instantânea</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section class="demo" id="demo">
+        <div class="container">
+            <div class="section-header">
+                <h2>Veja em Ação</h2>
+                <p>Descubra como o Omnix pode revolucionar seu atendimento</p>
+            </div>
+            <div class="demo-content">
+                <div class="demo-video">
+                    <div class="play-button" onclick="playDemo()">
+                        <svg fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M6.5 5.5v9l7-4.5z"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="demo-highlights">
+                    <h3>Destaques do Sistema</h3>
+                    <div class="highlight-item">
+                        <div class="highlight-number">1</div>
+                        <div class="highlight-content">
+                            <h4>Onboarding em 5 minutos</h4>
+                            <p>Conecte seu WhatsApp via QR Code e comece a atender imediatamente</p>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-number">2</div>
+                        <div class="highlight-content">
+                            <h4>Workflows visuais intuitivos</h4>
+                            <p>Crie automações complexas sem escrever uma linha de código</p>
+                        </div>
+                    </div>
+                    <div class="highlight-item">
+                        <div class="highlight-number">3</div>
+                        <div class="highlight-content">
+                            <h4>Dashboard em tempo real</h4>
+                            <p>Acompanhe métricas, SLA e performance de cada operador</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Use Cases -->
+    <section class="use-cases">
+        <div class="container">
+            <div class="section-header">
+                <h2>Casos de Uso</h2>
+                <p>Perfeito para diferentes departamentos e necessidades</p>
+            </div>
+            <div class="use-cases-grid">
+                <div class="use-case-card">
+                    <div class="use-case-icon">💼</div>
+                    <h3>Vendas & Comercial</h3>
+                    <p>Qualifique leads automaticamente, distribua para vendedores especializados e acompanhe o funil em tempo real.</p>
+                </div>
+                <div class="use-case-card">
+                    <div class="use-case-icon">🎧</div>
+                    <h3>Suporte ao Cliente</h3>
+                    <p>Resolva tickets rapidamente com respostas prontas, base de conhecimento integrada e escalação automática.</p>
+                </div>
+                <div class="use-case-card">
+                    <div class="use-case-icon">💳</div>
+                    <h3>Cobrança & Backoffice</h3>
+                    <p>Automatize lembretes de pagamento, negocie acordos e mantenha histórico completo de interações.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing -->
+    <section class="pricing" id="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2>Planos & Preços</h2>
+                <p>Escolha o plano ideal para o tamanho da sua operação</p>
+            </div>
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <h3 class="plan-name">Starter</h3>
+                    <div class="plan-price">R$ 297<span>/mês</span></div>
+                    <p class="plan-description">Ideal para pequenas equipes</p>
+                    <ul class="plan-features">
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            1 número WhatsApp
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Até 3 operadores
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            5.000 mensagens/mês
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Workflows básicos
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Suporte por email
+                        </li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary" style="width: 100%;">Começar Agora</a>
+                </div>
+                <div class="pricing-card featured">
+                    <h3 class="plan-name">Professional</h3>
+                    <div class="plan-price">R$ 597<span>/mês</span></div>
+                    <p class="plan-description">Para equipes em crescimento</p>
+                    <ul class="plan-features">
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            3 números WhatsApp
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Até 10 operadores
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            20.000 mensagens/mês
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Workflows avançados
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Relatórios avançados
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Suporte prioritário
+                        </li>
+                    </ul>
+                    <a href="#" class="btn btn-primary" style="width: 100%;">Teste Grátis</a>
+                </div>
+                <div class="pricing-card">
+                    <h3 class="plan-name">Enterprise</h3>
+                    <div class="plan-price">Personalizado</div>
+                    <p class="plan-description">Soluções sob medida</p>
+                    <ul class="plan-features">
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Números ilimitados
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Operadores ilimitados
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Mensagens ilimitadas
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Whitelabel completo
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            SLA garantido
+                        </li>
+                        <li>
+                            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"></path>
+                            </svg>
+                            Gerente de sucesso
+                        </li>
+                    </ul>
+                    <a href="#" class="btn btn-secondary" style="width: 100%;">Falar com Vendas</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security Section -->
+    <section class="security" id="security">
+        <div class="container">
+            <div class="section-header">
+                <h2>Segurança & Privacidade</h2>
+                <p>Sua empresa e seus clientes protegidos com o mais alto nível de segurança</p>
+            </div>
+            <div class="security-grid">
+                <div class="security-item">
+                    <div class="security-icon">🔐</div>
+                    <h3>Dados Criptografados</h3>
+                    <p>Todas as conversas e dados sensíveis são protegidos com criptografia de ponta a ponta</p>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon">🛡️</div>
+                    <h3>Conformidade LGPD</h3>
+                    <p>Total adequação à Lei Geral de Proteção de Dados com controles de privacidade</p>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon">🔒</div>
+                    <h3>Acesso Seguro</h3>
+                    <p>Autenticação robusta e controle granular de permissões por equipe e operador</p>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon">📝</div>
+                    <h3>Auditoria & Rastreabilidade</h3>
+                    <p>Histórico completo de todas as ações para compliance e controle interno</p>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon">🏢</div>
+                    <h3>Isolamento de Dados</h3>
+                    <p>Cada empresa tem seu ambiente isolado e seguro, sem compartilhamento de informações</p>
+                </div>
+                <div class="security-item">
+                    <div class="security-icon">⚡</div>
+                    <h3>Backup Automático</h3>
+                    <p>Proteção contra perda de dados com backups automáticos e recuperação rápida</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Choose Omnix -->
+    <section class="why-choose" style="padding: 5rem 0; background: #F8F9FA;">
+        <div class="container">
+            <div class="section-header">
+                <h2>Por que escolher o Omnix?</h2>
+                <p>Mais do que um software, uma parceria para o crescimento do seu negócio</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 3rem; margin-top: 3rem;">
+                <div style="text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--dark);">Implementação Rápida</h3>
+                    <p style="color: var(--gray); line-height: 1.8;">Comece a usar em menos de 5 minutos. Sem configurações complexas ou treinamento extenso.</p>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">📈</div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--dark);">Escala com seu Negócio</h3>
+                    <p style="color: var(--gray); line-height: 1.8;">De 1 a 100 operadores, nossa plataforma cresce junto com sua empresa sem perder performance.</p>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--dark);">ROI Comprovado</h3>
+                    <p style="color: var(--gray); line-height: 1.8;">Reduza em até 70% o tempo de resposta e aumente suas vendas com atendimento eficiente.</p>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🏆</div>
+                    <h3 style="font-size: 1.2rem; margin-bottom: 1rem; color: var(--dark);">Suporte Premiado</h3>
+                    <p style="color: var(--gray); line-height: 1.8;">Equipe especializada disponível 24/7 para garantir que você aproveite ao máximo a plataforma.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq" id="faq">
+        <div class="container">
+            <div class="section-header">
+                <h2>Perguntas Frequentes</h2>
+                <p>Tudo que você precisa saber sobre o Omnix</p>
+            </div>
+            <div class="faq-container">
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Como funciona o período de teste gratuito?</span>
+                        <span class="faq-arrow">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Você tem 7 dias para testar todas as funcionalidades do plano Professional sem compromisso. Não pedimos cartão de crédito para começar. Ao final do período, você pode escolher continuar com um plano pago ou encerrar sem custos.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Posso migrar meu número WhatsApp existente?</span>
+                        <span class="faq-arrow">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Sim! Você pode conectar seu número WhatsApp Business existente via QR Code ou utilizar um de nossos números digitais disponíveis. O processo é rápido e não há perda de histórico.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Quantos operadores podem atender simultaneamente?</span>
+                        <span class="faq-arrow">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Não há limite técnico para operadores simultâneos no mesmo número. Nosso sistema de distribuição inteligente garante que não haja colisão de mensagens, com indicadores de "digitando" e bloqueio suave para evitar respostas duplicadas.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Os workflows precisam de conhecimento técnico?</span>
+                        <span class="faq-arrow">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Não! Nossa interface visual é intuitiva e não requer programação. Oferecemos templates prontos para casos comuns como triagem, boas-vindas e FAQ automático. Você também pode importar modelos da nossa biblioteca.
+                    </div>
+                </div>
+                <div class="faq-item">
+                    <div class="faq-question" onclick="toggleFaq(this)">
+                        <span>Como funciona a segurança dos dados?</span>
+                        <span class="faq-arrow">▼</span>
+                    </div>
+                    <div class="faq-answer">
+                        Utilizamos os mais altos padrões de segurança do mercado, com criptografia de ponta a ponta para todos os dados. Somos totalmente compliance com LGPD e oferecemos recursos de exportação e exclusão de dados sob demanda. Cada empresa tem seu ambiente isolado e seguro.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA -->
+    <section class="cta-final">
+        <div class="container">
+            <h2>Pronto para Revolucionar seu Atendimento?</h2>
+            <p>Junte-se a mais de 2.500 empresas que já transformaram seu WhatsApp</p>
+            <div class="cta-buttons">
+                <a href="#" class="btn btn-white">Começar Teste Grátis</a>
+                <a href="#" class="btn btn-secondary" style="background: transparent; border: 2px solid white; color: white;">Agendar Demonstração</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>Omnix</h3>
+                    <p style="color: rgba(255,255,255,0.8); margin-top: 1rem;">
+                        Plataforma completa de atendimento WhatsApp multioperador com automação inteligente.
+                    </p>
+                </div>
+                <div class="footer-section">
+                    <h3>Produto</h3>
+                    <ul>
+                        <li><a href="#">Recursos</a></li>
+                        <li><a href="#">Como Funciona</a></li>
+                        <li><a href="#">Planos</a></li>
+                        <li><a href="#">Changelog</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Empresa</h3>
+                    <ul>
+                        <li><a href="#">Sobre</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Carreiras</a></li>
+                        <li><a href="#">Contato</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h3>Legal</h3>
+                    <ul>
+                        <li><a href="#">Termos de Uso</a></li>
+                        <li><a href="#">Privacidade</a></li>
+                        <li><a href="#">LGPD</a></li>
+                        <li><a href="#">SLA</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Omnix. Todos os direitos reservados.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cookie Consent -->
+    <div class="cookie-consent" id="cookieConsent">
+        <p>Usamos cookies para melhorar sua experiência. Ao continuar, você concorda com nossa política de privacidade.</p>
+        <div style="margin-top: 1rem; display: flex; gap: 1rem;">
+            <button class="btn btn-primary" onclick="acceptCookies()">Aceitar</button>
+            <button class="btn btn-secondary" style="background: transparent; border: 1px solid white; color: white;" onclick="rejectCookies()">Recusar</button>
+        </div>
+    </div>
+
+    <script>
+        // Smooth scroll for anchor links
+        document.addEventListener('DOMContentLoaded', function() {
+            const anchors = document.querySelectorAll('a[href^="#"]');
+            anchors.forEach(function(anchor) {
+                anchor.addEventListener('click', function(e) {
+                    const href = this.getAttribute('href');
+                    if (href && href !== '#') {
+                        const target = document.querySelector(href);
+                        if (target) {
+                            e.preventDefault();
+                            target.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                        }
+                    }
+                });
+            });
+        });
+
+        // FAQ Toggle
+        function toggleFaq(element) {
+            if (!element) return;
+            
+            const answer = element.nextElementSibling;
+            if (!answer) return;
+            
+            const isActive = element.classList.contains('active');
+            
+            // Close all FAQs
+            const allQuestions = document.querySelectorAll('.faq-question');
+            allQuestions.forEach(function(q) {
+                q.classList.remove('active');
+                const a = q.nextElementSibling;
+                if (a) {
+                    a.classList.remove('active');
+                }
+            });
+            
+            // Open clicked FAQ if it wasn't active
+            if (!isActive) {
+                element.classList.add('active');
+                answer.classList.add('active');
+            }
+        }
+
+        // Cookie Consent
+        document.addEventListener('DOMContentLoaded', function() {
+            try {
+                const cookieConsent = localStorage.getItem('cookieConsent');
+                if (!cookieConsent) {
+                    setTimeout(function() {
+                        const consentElement = document.getElementById('cookieConsent');
+                        if (consentElement) {
+                            consentElement.classList.add('show');
+                        }
+                    }, 2000);
+                }
+            } catch(e) {
+                console.log('LocalStorage not available');
+            }
+        });
+
+        function acceptCookies() {
+            try {
+                localStorage.setItem('cookieConsent', 'accepted');
+                const consentElement = document.getElementById('cookieConsent');
+                if (consentElement) {
+                    consentElement.classList.remove('show');
+                }
+                initializeAnalytics();
+            } catch(e) {
+                console.log('Error accepting cookies');
+            }
+        }
+
+        function rejectCookies() {
+            try {
+                localStorage.setItem('cookieConsent', 'rejected');
+                const consentElement = document.getElementById('cookieConsent');
+                if (consentElement) {
+                    consentElement.classList.remove('show');
+                }
+            } catch(e) {
+                console.log('Error rejecting cookies');
+            }
+        }
+
+        function initializeAnalytics() {
+            // GA4, Meta Pixel, etc.
+            console.log('Analytics initialized');
+        }
+
+        // Play Demo (placeholder)
+        function playDemo() {
+            alert('Demonstração em vídeo será adicionada aqui');
+        }
+
+        // Mobile Menu Toggle (placeholder)
+        function toggleMobileMenu() {
+            console.log('Mobile menu toggle - implement menu overlay');
+        }
+
+        // Header scroll effect
+        let lastScroll = 0;
+        window.addEventListener('scroll', function() {
+            const currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+            const header = document.querySelector('header');
+            
+            if (header) {
+                if (currentScroll > 50) {
+                    header.classList.add('scrolled');
+                } else {
+                    header.classList.remove('scrolled');
+                }
+            }
+            
+            lastScroll = currentScroll;
+        });
+
+        // Form validation (for future implementation)
+        function validateForm(form) {
+            if (!form) return false;
+            
+            const email = form.querySelector('input[type="email"]');
+            if (!email) return false;
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            
+            if (!emailRegex.test(email.value)) {
+                alert('Por favor, insira um email válido');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Performance monitoring
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.performance && performance.getEntriesByType) {
+                const perfData = performance.getEntriesByType('navigation');
+                if (perfData && perfData.length > 0) {
+                    const navData = perfData[0];
+                    if (navData.loadEventEnd && navData.fetchStart) {
+                        console.log('Page Load Time:', navData.loadEventEnd - navData.fetchStart, 'ms');
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,6 +1,23 @@
 import { useState, useEffect } from 'react';
-import { Plus, User, Phone, Mail, Tag, Search, Edit3 } from 'lucide-react';
+import { 
+  Plus, 
+  User, 
+  Phone, 
+  Mail, 
+  Tag, 
+  Search, 
+  Edit3, 
+  MessageSquare,
+  Users,
+  Filter,
+  Download,
+  X,
+  UserPlus,
+  Trash2
+} from 'lucide-react';
 import { api } from '../lib/api';
+import { useAuthStore } from '../store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 interface Contact {
   id: string;
@@ -17,12 +34,18 @@ interface Contact {
 }
 
 export default function Contacts() {
+  const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingContact, setEditingContact] = useState<Contact | null>(null);
   const [error, setError] = useState('');
+  const [selectedContacts, setSelectedContacts] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [tagInput, setTagInput] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<Contact | null>(null);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -30,6 +53,7 @@ export default function Contacts() {
     phone: '',
     email: '',
     tags: [] as string[],
+    groups: [] as string[],
     customFields: {} as Record<string, any>
   });
 
@@ -83,8 +107,67 @@ export default function Contacts() {
       phone: '',
       email: '',
       tags: [],
+      groups: [],
       customFields: {}
     });
+    setTagInput('');
+  };
+
+  const addTag = () => {
+    if (tagInput.trim() && !formData.tags.includes(tagInput.trim())) {
+      setFormData(prev => ({
+        ...prev,
+        tags: [...prev.tags, tagInput.trim()]
+      }));
+      setTagInput('');
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData(prev => ({
+      ...prev,
+      tags: prev.tags.filter(tag => tag !== tagToRemove)
+    }));
+  };
+
+  const startConversation = async (contact: Contact) => {
+    try {
+      // Navigate to chat and open conversation with this contact
+      navigate(`/chat?phone=${contact.phone}&name=${encodeURIComponent(contact.name)}`);
+    } catch (error) {
+      console.error('Error starting conversation:', error);
+    }
+  };
+
+  const deleteContact = async (contact: Contact) => {
+    try {
+      await api.delete(`/contacts/${contact.id}`);
+      setContacts(prev => prev.filter(c => c.id !== contact.id));
+      setDeleteConfirm(null);
+      console.log('✅ Contact deleted successfully:', contact.name);
+    } catch (error: any) {
+      console.error('❌ Error deleting contact:', error);
+      setError(error.response?.data?.message || 'Erro ao excluir contato');
+    }
+  };
+
+  const isAdmin = user?.role && ['super_admin', 'tenant_admin', 'tenant_manager'].includes(user.role);
+
+  const exportContacts = async () => {
+    try {
+      const response = await api.get('/contacts', {
+        params: { format: 'csv' }
+      });
+      // Download CSV file
+      const blob = new Blob([response.data], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'contatos.csv';
+      a.click();
+    } catch (error) {
+      console.error('Error exporting contacts:', error);
+    }
   };
 
   const openEditModal = (contact: Contact) => {
@@ -122,37 +205,70 @@ export default function Contacts() {
   }
 
   return (
-    <div className="h-full space-y-6">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">👥 Contatos</h1>
-          <p className="text-gray-600">Gerencie seus contatos e relacionamentos</p>
+          <h1 className="text-2xl font-bold text-dark-900 flex items-center">
+            <Users className="w-6 h-6 mr-2 text-primary-600" />
+            Contatos
+          </h1>
+          <p className="text-gray-500 mt-1">Gerencie sua lista de contatos e relacionamentos</p>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors flex items-center"
-        >
-          <Plus className="w-5 h-5 mr-2" />
-          Novo Contato
-        </button>
+        
+        <div className="flex items-center space-x-3">
+          <button
+            onClick={exportContacts}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Download className="w-4 h-4" />
+            <span>Exportar</span>
+          </button>
+          
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <Filter className="w-4 h-4" />
+            <span>Filtros</span>
+          </button>
+          
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-gradient text-white rounded-lg hover:shadow-primary-lg transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Novo Contato</span>
+          </button>
+        </div>
       </div>
 
-      {/* Search */}
-      <div className="bg-white rounded-lg shadow p-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              if (e.target.value === '') loadContacts();
-            }}
-            onKeyPress={(e) => e.key === 'Enter' && loadContacts()}
-            placeholder="Buscar contatos por nome, telefone ou email..."
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      {/* Search and Stats */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Search */}
+        <div className="lg:col-span-3 bg-white rounded-xl border border-gray-200 p-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                if (e.target.value === '') loadContacts();
+              }}
+              onKeyPress={(e) => e.key === 'Enter' && loadContacts()}
+              placeholder="Buscar contatos por nome, telefone ou email..."
+              className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+
+        {/* Stats Card */}
+        <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-primary-600">{contacts.length}</div>
+            <div className="text-sm text-gray-500">Total de Contatos</div>
+          </div>
         </div>
       </div>
 
@@ -193,7 +309,7 @@ export default function Contacts() {
               <div key={contact.id} className="p-4 hover:bg-gray-50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center min-w-0 flex-1">
-                    <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium mr-4">
+                    <div className="w-12 h-12 bg-primary-gradient rounded-full flex items-center justify-center text-white font-bold mr-4 shadow-lg">
                       {contact.name.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -216,7 +332,7 @@ export default function Contacts() {
                         <div className="flex items-center mt-2 space-x-1">
                           <Tag className="w-4 h-4 text-gray-400" />
                           {contact.tags.slice(0, 3).map(tag => (
-                            <span key={tag} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            <span key={tag} className="bg-primary-100 text-primary-800 text-xs px-2 py-1 rounded-full">
                               {tag}
                             </span>
                           ))}
@@ -227,12 +343,34 @@ export default function Contacts() {
                       )}
                     </div>
                   </div>
-                  <button
-                    onClick={() => openEditModal(contact)}
-                    className="p-2 hover:bg-gray-100 rounded-lg text-gray-600"
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </button>
+                  
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => startConversation(contact)}
+                      className="p-2 bg-primary-100 hover:bg-primary-200 rounded-lg text-primary-600 transition-colors"
+                      title="Iniciar conversa no WhatsApp"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </button>
+                    
+                    <button
+                      onClick={() => openEditModal(contact)}
+                      className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition-colors"
+                      title="Editar contato"
+                    >
+                      <Edit3 className="w-4 h-4" />
+                    </button>
+
+                    {isAdmin && (
+                      <button
+                        onClick={() => setDeleteConfirm(contact)}
+                        className="p-2 bg-red-100 hover:bg-red-200 rounded-lg text-red-600 transition-colors"
+                        title="Excluir contato"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -243,70 +381,194 @@ export default function Contacts() {
       {/* Create/Edit Contact Modal */}
       {(showCreateModal || editingContact) && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">
-              {editingContact ? '✏️ Editar Contato' : '👤 Novo Contato'}
-            </h2>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome *
-                </label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder="Nome completo"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+          <div className="bg-white rounded-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-2">
+                <UserPlus className="w-5 h-5 text-primary-500" />
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {editingContact ? 'Editar Contato' : 'Novo Contato'}
+                </h2>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Telefone *
-                </label>
-                <input
-                  type="text"
-                  value={formData.phone}
-                  onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                  placeholder="(61) 99999-9999"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  placeholder="email@exemplo.com"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex space-x-3 mt-6">
               <button
                 onClick={() => {
                   setShowCreateModal(false);
                   setEditingContact(null);
                   resetForm();
                 }}
-                className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg hover:bg-gray-600 transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors"
               >
-                Cancelar
+                <X className="w-5 h-5" />
               </button>
-              <button
-                onClick={editingContact ? updateContact : createContact}
-                disabled={!formData.name.trim() || !formData.phone.trim()}
-                className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
-              >
-                {editingContact ? 'Atualizar' : 'Criar'}
-              </button>
+            </div>
+
+            {/* Form */}
+            <div className="p-6 space-y-4">
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+                  <p className="text-red-600 text-sm">{error}</p>
+                </div>
+              )}
+
+              {/* Name */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome *
+                </label>
+                <div className="relative">
+                  <User className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="Nome completo"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              
+              {/* Phone */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Telefone *
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    placeholder="(61) 99999-9999"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              
+              {/* Email */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email (opcional)
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    placeholder="email@exemplo.com"
+                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Tags */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tags (opcional)
+                </label>
+                <div className="space-y-2">
+                  <div className="flex space-x-2">
+                    <div className="relative flex-1">
+                      <Tag className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        value={tagInput}
+                        onChange={(e) => setTagInput(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                        placeholder="Adicionar tag"
+                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addTag}
+                      className="px-3 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 transition-colors disabled:opacity-50"
+                      disabled={!tagInput.trim()}
+                    >
+                      +
+                    </button>
+                  </div>
+                  
+                  {formData.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-2">
+                      {formData.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center px-2 py-1 bg-primary-100 text-primary-800 text-sm rounded-full"
+                        >
+                          {tag}
+                          <button
+                            type="button"
+                            onClick={() => removeTag(tag)}
+                            className="ml-1 text-primary-600 hover:text-primary-800"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex space-x-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setEditingContact(null);
+                    resetForm();
+                  }}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={editingContact ? updateContact : createContact}
+                  disabled={!formData.name.trim() || !formData.phone.trim()}
+                  className="flex-1 px-4 py-2 bg-primary-gradient text-white rounded-lg hover:shadow-primary-lg transition-all disabled:opacity-50"
+                >
+                  {editingContact ? 'Atualizar' : 'Criar Contato'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl w-full max-w-md">
+            <div className="p-6">
+              <div className="flex items-center justify-center w-12 h-12 bg-red-100 rounded-full mx-auto mb-4">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">
+                Excluir Contato
+              </h3>
+              
+              <p className="text-gray-600 text-center mb-6">
+                Tem certeza que deseja excluir <strong>{deleteConfirm.name}</strong>?
+                <br />
+                <span className="text-sm text-gray-500">Esta ação não pode ser desfeita.</span>
+              </p>
+              
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setDeleteConfirm(null)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => deleteContact(deleteConfirm)}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Excluir
+                </button>
+              </div>
             </div>
           </div>
         </div>

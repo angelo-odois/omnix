@@ -1,653 +1,524 @@
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { 
   MessageSquare, 
   Users, 
   Phone, 
   Clock,
   TrendingUp,
-  AlertCircle,
+  Activity,
+  Zap,
   CheckCircle,
+  AlertCircle,
   XCircle,
   RefreshCw,
-  Download,
-  Filter
+  Plus,
+  MoreVertical,
+  Send,
+  MessageCircle,
+  UserCheck,
+  BarChart3,
+  X
 } from 'lucide-react';
-import { useState } from 'react';
-import ModuleStatusWidget from '../components/dashboard/ModuleStatusWidget';
-import { useDashboard } from '../hooks/useDashboard';
-import { instanceService } from '../services/instanceService';
-import { useNotificationStore } from '../store/notificationStore';
-import InstanceTest from '../components/debug/InstanceTest';
-import type { PeriodFilter } from '../services/dashboardService';
 import { api } from '../lib/api';
-import { withPageId, withComponentId, withFeatureId } from '../utils/componentId';
 
-interface StatCard {
-  label: string;
-  value: string | number;
-  change?: string;
-  icon: React.ElementType;
-  color: string;
+interface DashboardMetrics {
+  totalMessages: number;
+  totalConversations: number;
+  activeInstances: number;
+  responseTime: number;
+  messagesGrowth: number;
+  conversationsGrowth: number;
 }
 
-const formatNumber = (num: number): string => {
-  if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
-  if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
-  return num.toString();
-};
+interface WhatsAppInstance {
+  id: string;
+  name: string;
+  phoneNumber?: string;
+  status: 'connected' | 'disconnected' | 'connecting' | 'error';
+  lastSeen?: string;
+}
 
-const formatTime = (minutes: number): string => {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return hours > 0 ? `${hours}:${mins.toString().padStart(2, '0')}` : `${mins}min`;
-};
+interface RecentActivity {
+  id: string;
+  type: 'message' | 'conversation' | 'connection';
+  title: string;
+  description: string;
+  time: string;
+  status?: 'success' | 'warning' | 'error';
+}
 
-const formatChange = (current: number, previous: number): string => {
-  if (previous === 0) return '+100%';
-  const change = ((current - previous) / previous) * 100;
-  return `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
-};
-
-const periodOptions: { value: PeriodFilter['period']; label: string }[] = [
-  { value: 'today', label: 'Hoje' },
-  { value: 'week', label: 'Esta semana' },
-  { value: 'month', label: 'Este mês' },
-  { value: 'year', label: 'Este ano' }
-];
-
-export default function Dashboard() {
-  const [showExportModal, setShowExportModal] = useState(false);
-  const [confirmTerminate, setConfirmTerminate] = useState<{instanceId: string; instanceName: string} | null>(null);
-  const [terminating, setTerminating] = useState<string | null>(null);
-  
-  const { 
-    data, 
-    loading, 
-    error, 
-    lastUpdated, 
-    filter, 
-    updateFilter, 
-    refresh, 
-    exportData,
-    isStale 
-  } = useDashboard({
-    autoRefresh: true,
-    refreshInterval: 30000 // 30 seconds
+const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
+    totalMessages: 0,
+    totalConversations: 0,
+    activeInstances: 0,
+    responseTime: 0,
+    messagesGrowth: 0,
+    conversationsGrowth: 0
   });
+  
+  const [instances, setInstances] = useState<WhatsAppInstance[]>([]);
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showNewInstanceModal, setShowNewInstanceModal] = useState(false);
 
-  const { addNotification } = useNotificationStore();
+  useEffect(() => {
+    loadDashboardData();
+    const interval = setInterval(loadDashboardData, 30000); // Refresh every 30s
+    return () => clearInterval(interval);
+  }, []);
+
+  const loadDashboardData = async (showRefresh = false) => {
+    if (showRefresh) setRefreshing(true);
+    
+    try {
+      const [metricsRes, instancesRes, conversationsRes] = await Promise.all([
+        api.get('/dashboard/metrics'),
+        api.get('/whatsapp/instances'),
+        api.get('/messages/conversations?limit=5')
+      ]);
+
+      if (metricsRes.data.success) {
+        setMetrics(metricsRes.data.data);
+      }
+
+      if (instancesRes.data.success) {
+        setInstances(instancesRes.data.data || []);
+      }
+
+      // Generate recent activity from conversations
+      if (conversationsRes.data.success) {
+        const conversations = conversationsRes.data.data || [];
+        const activities: RecentActivity[] = conversations.map((conv: any, index: number) => ({
+          id: conv.id,
+          type: 'conversation' as const,
+          title: conv.contactName || conv.contactPhone,
+          description: conv.lastMessage || 'Nova conversa',
+          time: formatRelativeTime(conv.lastMessageAt || conv.createdAt),
+          status: index < 2 ? 'success' : undefined
+        }));
+        
+        setRecentActivity(activities);
+      }
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setLoading(false);
+      if (showRefresh) setRefreshing(false);
+    }
+  };
+
+  const formatRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    
+    const minutes = Math.floor(diff / 60000);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    
+    if (minutes < 1) return 'agora';
+    if (minutes < 60) return `${minutes}min atrás`;
+    if (hours < 24) return `${hours}h atrás`;
+    return `${days}d atrás`;
+  };
+
+  const formatNumber = (num: number): string => {
+    if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+    if (num >= 1000) return (num / 1000).toFixed(1) + 'k';
+    return num.toString();
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'connected': return 'text-green-600 bg-green-100';
+      case 'connecting': return 'text-yellow-600 bg-yellow-100';
+      case 'error': return 'text-red-600 bg-red-100';
+      default: return 'text-gray-600 bg-gray-100';
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'connected':
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case 'disconnected':
-        return <XCircle className="w-5 h-5 text-red-500" />;
-      case 'connecting':
-        return <Clock className="w-5 h-5 text-yellow-500" />;
-      case 'error':
-        return <AlertCircle className="w-5 h-5 text-red-500" />;
-      default:
-        return <XCircle className="w-5 h-5 text-gray-500" />;
+      case 'connected': return <CheckCircle className="w-4 h-4" />;
+      case 'connecting': return <Clock className="w-4 h-4" />;
+      case 'error': return <AlertCircle className="w-4 h-4" />;
+      default: return <XCircle className="w-4 h-4" />;
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'connected':
-        return 'Conectado';
-      case 'disconnected':
-        return 'Desconectado';
-      case 'connecting':
-        return 'Conectando';
-      case 'error':
-        return 'Erro';
-      default:
-        return 'Desconhecido';
-    }
+  // Quick Actions Functions
+  const handleNewInstance = () => {
+    setShowNewInstanceModal(true);
   };
 
-  const handlePeriodChange = (period: PeriodFilter['period']) => {
-    updateFilter({ period });
+  const handleMessages = () => {
+    navigate('/chat');
   };
 
-  const handleExport = async (format: 'csv' | 'xlsx' | 'pdf') => {
-    await exportData(format);
-    setShowExportModal(false);
+  const handleContacts = () => {
+    navigate('/contacts');
   };
 
-  const handleTerminateInstance = async (instanceId: string) => {
-    if (!confirmTerminate) return;
-    
+  const handleReports = () => {
+    // Create a simple reports page navigation
+    navigate('/reports');
+  };
+
+  const createNewInstance = async (instanceName: string) => {
     try {
-      setTerminating(instanceId);
+      const response = await api.post('/whatsapp/instances', {
+        name: instanceName
+      });
       
-      const result = await instanceService.deleteInstance(instanceId);
-      
-      if (result.success) {
-        addNotification({
-          type: 'success',
-          title: 'Instância Encerrada',
-          message: `Instância ${confirmTerminate.instanceName} foi encerrada permanentemente`,
-          priority: 'normal'
-        });
-        
-        // Refresh dashboard data
-        refresh();
-      } else {
-        throw new Error(result.message || 'Falha ao encerrar instância');
+      if (response.data.success) {
+        setShowNewInstanceModal(false);
+        loadDashboardData(); // Refresh data
+        console.log('✅ New instance created:', instanceName);
       }
     } catch (error) {
-      addNotification({
-        type: 'warning',
-        title: 'Erro ao Encerrar Instância',
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        priority: 'high'
-      });
-    } finally {
-      setTerminating(null);
-      setConfirmTerminate(null);
+      console.error('❌ Error creating instance:', error);
     }
   };
 
-  const handleDisconnectInstance = async (instanceId: string, instanceName: string) => {
-    try {
-      const result = await instanceService.disconnectInstance(instanceId);
-      
-      if (result.success) {
-        addNotification({
-          type: 'success',
-          title: 'Instância Desconectada',
-          message: `Instância ${instanceName} foi desconectada`,
-          priority: 'normal'
-        });
-        
-        // Refresh dashboard data
-        refresh();
-      } else {
-        throw new Error(result.message || 'Falha ao desconectar instância');
-      }
-    } catch (error) {
-      addNotification({
-        type: 'warning',
-        title: 'Erro ao Desconectar Instância',
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        priority: 'normal'
-      });
-    }
-  };
-
-  if (loading && !data) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <span className="ml-2 text-gray-600">Carregando dashboard...</span>
+      <div className="flex items-center justify-center h-96">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
       </div>
     );
   }
-
-  if (error && !data) {
-    return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
-        <div className="flex">
-          <AlertCircle className="h-5 w-5 text-red-400" />
-          <div className="ml-3">
-            <h3 className="text-sm font-medium text-red-800">Erro ao carregar dashboard</h3>
-            <p className="mt-2 text-sm text-red-700">{error}</p>
-            <button
-              onClick={() => refresh()}
-              className="mt-2 bg-red-100 px-3 py-1 rounded text-sm text-red-800 hover:bg-red-200"
-            >
-              Tentar novamente
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const stats: StatCard[] = (data && data.metrics) ? [
-    {
-      label: 'Conversas Ativas',
-      value: data.metrics.conversations?.active || 0,
-      change: data.metrics.conversations?.active ? formatChange(data.metrics.conversations.active, (data.metrics.conversations.total || 0) - data.metrics.conversations.active) : undefined,
-      icon: MessageSquare,
-      color: 'bg-blue-500',
-    },
-    {
-      label: 'Contatos',
-      value: formatNumber(data.metrics.contacts?.total || 0),
-      change: data.metrics.contacts?.total ? formatChange(data.metrics.contacts.total, data.metrics.contacts.total - (data.metrics.contacts.new || 0)) : undefined,
-      icon: Users,
-      color: 'bg-green-500',
-    },
-    {
-      label: 'Números Ativos',
-      value: data.metrics.instances?.connected || 0,
-      icon: Phone,
-      color: 'bg-purple-500',
-    },
-    {
-      label: 'Tempo Médio',
-      value: formatTime(data.metrics.messages?.avgResponseTime || 0),
-      change: data.metrics.messages?.avgResponseTime ? formatChange(data.metrics.messages.avgResponseTime, data.metrics.messages.avgResponseTime * 1.1) : undefined,
-      icon: Clock,
-      color: 'bg-orange-500',
-    },
-  ] : [
-    {
-      label: 'Conversas Ativas',
-      value: 0,
-      icon: MessageSquare,
-      color: 'bg-blue-500',
-    },
-    {
-      label: 'Contatos',
-      value: 0,
-      icon: Users,
-      color: 'bg-green-500',
-    },
-    {
-      label: 'Números Ativos',
-      value: 0,
-      icon: Phone,
-      color: 'bg-purple-500',
-    },
-    {
-      label: 'Tempo Médio',
-      value: '0min',
-      icon: Clock,
-      color: 'bg-orange-500',
-    },
-  ];
 
   return (
-    <div {...withPageId('Dashboard')} className="space-y-6">
-      <div {...withComponentId('DashboardHeader')} className="flex items-center justify-between">
-        <div {...withComponentId('DashboardHeader', 'title')}>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">
-            Visão geral do sistema
-            {lastUpdated && (
-              <span className="text-sm ml-2">
-                • Atualizado {new Date(lastUpdated).toLocaleTimeString()}
-              </span>
-            )}
-          </p>
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-dark-900">Dashboard</h1>
+          <p className="text-gray-500 mt-1">Visão geral do sistema</p>
         </div>
         
-        <div className="flex items-center gap-4">
-          {/* Period Filter */}
-          <select 
-            value={filter.period}
-            onChange={(e) => handlePeriodChange(e.target.value as PeriodFilter['period'])}
-            className="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-          >
-            {periodOptions.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-          
-          {/* Export Button */}
-          <div className="relative">
-            <button
-              onClick={() => setShowExportModal(!showExportModal)}
-              className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Exportar
-            </button>
-            
-            {showExportModal && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200">
-                <div className="py-1">
-                  <button
-                    onClick={() => handleExport('csv')}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    CSV
-                  </button>
-                  <button
-                    onClick={() => handleExport('xlsx')}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    Excel (XLSX)
-                  </button>
-                  <button
-                    onClick={() => handleExport('pdf')}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
-                  >
-                    PDF
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-          
-          {/* Refresh Button */}
+        <div className="flex items-center space-x-3">
           <button
-            onClick={refresh}
-            disabled={loading}
-            className={`flex items-center px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed ${
-              loading ? 'animate-pulse' : ''
-            } ${isStale ? 'bg-yellow-600 hover:bg-yellow-700' : ''}`}
+            onClick={() => loadDashboardData(true)}
+            disabled={refreshing}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            {loading ? 'Carregando...' : isStale ? 'Desatualizado' : 'Atualizar'}
+            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>Atualizar</span>
           </button>
           
-          <button
-            onClick={async () => {
-              try {
-                // Simulate receiving a message via API
-                await api.post('/messages/simulate-message', {
-                  from: '5511987654321',
-                  content: 'Olá! Esta é uma mensagem de teste para verificar as notificações.',
-                  contactName: 'João Silva'
-                });
-                
-                // Also add a direct notification for immediate feedback
-                addNotification({
-                  type: 'success',
-                  title: 'Mensagem Simulada',
-                  message: 'Mensagem de teste enviada. Aguarde a notificação...',
-                  priority: 'normal'
-                });
-              } catch (error) {
-                addNotification({
-                  type: 'warning',
-                  title: 'Erro',
-                  message: 'Erro ao simular mensagem: ' + (error instanceof Error ? error.message : 'Erro desconhecido'),
-                  priority: 'high'
-                });
-              }
-            }}
-            className="flex items-center px-3 py-2 text-sm font-medium text-white bg-green-600 rounded-lg hover:bg-green-700"
+          <button 
+            onClick={handleNewInstance}
+            className="flex items-center space-x-2 px-4 py-2 bg-primary-gradient text-white rounded-lg hover:shadow-primary-lg transition-all"
           >
-            📨 Simular Mensagem
+            <Plus className="w-4 h-4" />
+            <span>Nova Instância</span>
           </button>
         </div>
       </div>
 
-      <div {...withComponentId('StatsGrid')} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div 
-            {...withComponentId('StatCard', stat.label.toLowerCase().replace(/\s+/g, '-'))}
-            key={stat.label} 
-            className="bg-white rounded-lg shadow-sm border border-gray-100 p-6"
-            data-stat-label={stat.label}
-            data-stat-value={stat.value}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className={`${stat.color} p-3 rounded-lg`}>
-                <stat.icon className="w-6 h-6 text-white" />
-              </div>
-              {stat.change && (
-                <span className={`text-sm font-medium ${
-                  stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {stat.change}
-                </span>
+      {/* Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Total Messages */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Total de Mensagens</p>
+              <p className="text-2xl font-bold text-dark-900 mt-2">{formatNumber(metrics.totalMessages)}</p>
+              {metrics.messagesGrowth !== 0 && (
+                <p className={`text-sm mt-2 flex items-center ${metrics.messagesGrowth > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  {metrics.messagesGrowth > 0 ? '+' : ''}{metrics.messagesGrowth.toFixed(1)}%
+                </p>
               )}
             </div>
-            <div>
-              <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              <p className="text-sm text-gray-600 mt-1">{stat.label}</p>
+            <div className="bg-primary-100 p-3 rounded-full">
+              <MessageSquare className="w-6 h-6 text-primary-600" />
             </div>
           </div>
-        ))}
+        </div>
+
+        {/* Total Conversations */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Conversas</p>
+              <p className="text-2xl font-bold text-dark-900 mt-2">{formatNumber(metrics.totalConversations)}</p>
+              {metrics.conversationsGrowth !== 0 && (
+                <p className={`text-sm mt-2 flex items-center ${metrics.conversationsGrowth > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  <TrendingUp className="w-4 h-4 mr-1" />
+                  {metrics.conversationsGrowth > 0 ? '+' : ''}{metrics.conversationsGrowth.toFixed(1)}%
+                </p>
+              )}
+            </div>
+            <div className="bg-secondary-100 p-3 rounded-full">
+              <Users className="w-6 h-6 text-secondary-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Active Instances */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Instâncias Ativas</p>
+              <p className="text-2xl font-bold text-dark-900 mt-2">{metrics.activeInstances}</p>
+              <p className="text-sm mt-2 text-gray-500">de {instances.length} total</p>
+            </div>
+            <div className="bg-green-100 p-3 rounded-full">
+              <Phone className="w-6 h-6 text-green-600" />
+            </div>
+          </div>
+        </div>
+
+        {/* Response Time */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-600">Tempo de Resposta</p>
+              <p className="text-2xl font-bold text-dark-900 mt-2">{metrics.responseTime}s</p>
+              <p className="text-sm mt-2 text-green-600 flex items-center">
+                <Activity className="w-4 h-4 mr-1" />
+                Excelente
+              </p>
+            </div>
+            <div className="bg-yellow-100 p-3 rounded-full">
+              <Zap className="w-6 h-6 text-yellow-600" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Module Status Widget */}
-        <div className="lg:col-span-1">
-          <ModuleStatusWidget />
-        </div>
-        <div className="lg:col-span-2 bg-white rounded-lg shadow-sm border border-gray-100">
-          <div className="p-6 border-b border-gray-100">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-900">Status das Instâncias</h2>
-              <div className="flex gap-3">
-                <button
-                  onClick={() => window.location.href = '/all-instances'}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Ver todas →
-                </button>
-                <button
-                  onClick={refresh}
-                  className="text-sm text-gray-600 hover:text-gray-700"
-                  title="Atualizar instâncias"
-                >
-                  🔄
+        {/* WhatsApp Instances */}
+        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-dark-900">Instâncias WhatsApp</h2>
+            <button className="text-primary-600 hover:text-primary-700 transition-colors">
+              <MoreVertical className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="space-y-4">
+            {instances.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Phone className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                <p>Nenhuma instância conectada</p>
+                <button className="mt-4 px-4 py-2 bg-primary-gradient text-white rounded-lg text-sm">
+                  Conectar WhatsApp
                 </button>
               </div>
-            </div>
-          </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {data?.instances?.length ? data.instances.map((instance) => (
-                <div key={instance.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border-l-4 border-l-blue-500">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
+            ) : (
+              instances.map((instance) => (
+                <div key={instance.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors">
+                  <div className="flex items-center space-x-4">
+                    <div className={`p-2 rounded-full ${getStatusColor(instance.status)}`}>
                       {getStatusIcon(instance.status)}
-                      <span className="text-sm text-gray-600">
-                        {getStatusText(instance.status)}
-                      </span>
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900">{instance.name}</p>
-                      <p className="text-sm text-gray-600">
-                        {instance.phoneNumber || 'Não configurado'}
+                      <h3 className="font-medium text-dark-900">{instance.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {instance.phoneNumber || 'Sem número'}
+                        {instance.lastSeen && ` • ${formatRelativeTime(instance.lastSeen)}`}
                       </p>
-                      {instance.tenantName && (
-                        <p className="text-xs text-gray-500">
-                          Tenant: {instance.tenantName}
-                        </p>
-                      )}
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-gray-900">{instance.messagesToday}</p>
-                      <p className="text-sm text-gray-600">mensagens hoje</p>
-                    </div>
-                    
-                    {/* Action buttons */}
-                    <div className="flex gap-2">
-                      {instance.status === 'connected' && (
-                        <button
-                          onClick={() => handleDisconnectInstance(instance.id, instance.name)}
-                          className="px-3 py-1 text-xs font-medium text-yellow-700 bg-yellow-100 rounded-md hover:bg-yellow-200 transition-colors"
-                          title="Desconectar instância"
-                        >
-                          Desconectar
-                        </button>
-                      )}
-                      
-                      <button
-                        onClick={() => setConfirmTerminate({instanceId: instance.id, instanceName: instance.name})}
-                        disabled={terminating === instance.id}
-                        className="px-3 py-1 text-xs font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title="Encerrar instância permanentemente"
-                      >
-                        {terminating === instance.id ? 'Encerrando...' : 'Encerrar'}
-                      </button>
-                    </div>
+                  
+                  <div className="flex items-center space-x-2">
+                    {instance.status === 'connected' && (
+                      <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    )}
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${getStatusColor(instance.status)}`}>
+                      {instance.status === 'connected' ? 'Conectado' :
+                       instance.status === 'connecting' ? 'Conectando' :
+                       instance.status === 'error' ? 'Erro' : 'Desconectado'}
+                    </span>
                   </div>
                 </div>
-              )) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Nenhuma instância encontrada</p>
-                </div>
-              )}
-            </div>
+              ))
+            )}
           </div>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-          <div className="p-6 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-900">Atividade Recente</h2>
+        {/* Recent Activity */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-dark-900">Atividade Recente</h2>
+            <button className="text-primary-600 hover:text-primary-700 transition-colors text-sm">
+              Ver todas
+            </button>
           </div>
-          <div className="p-6">
-            <div className="space-y-4">
-              {data?.recentActivity?.length ? data.recentActivity.slice(0, 4).map((activity) => (
-                <div key={activity.id} className="flex items-start gap-4">
-                  <div className={`w-2 h-2 rounded-full mt-2 ${
-                    activity.type === 'message' ? 'bg-blue-500' :
-                    activity.type === 'conversation' ? 'bg-green-500' :
-                    activity.type === 'instance' ? 'bg-purple-500' :
-                    'bg-orange-500'
-                  }`}></div>
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-900">
-                      {activity.title}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(activity.timestamp).toLocaleString()}
-                    </p>
+          
+          <div className="space-y-4">
+            {recentActivity.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <Activity className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">Nenhuma atividade</p>
+              </div>
+            ) : (
+              recentActivity.map((activity) => (
+                <div key={activity.id} className="flex items-start space-x-3">
+                  <div className={`p-1.5 rounded-full mt-1 ${
+                    activity.type === 'message' ? 'bg-primary-100' :
+                    activity.type === 'conversation' ? 'bg-secondary-100' : 'bg-gray-100'
+                  }`}>
+                    {activity.type === 'message' && <Send className="w-3 h-3 text-primary-600" />}
+                    {activity.type === 'conversation' && <MessageCircle className="w-3 h-3 text-secondary-600" />}
+                    {activity.type === 'connection' && <UserCheck className="w-3 h-3 text-gray-600" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-dark-900 truncate">{activity.title}</p>
+                    <p className="text-xs text-gray-500 truncate">{activity.description}</p>
+                    <p className="text-xs text-gray-400 mt-1">{activity.time}</p>
                   </div>
                 </div>
-              )) : (
-                <div className="text-center py-8">
-                  <p className="text-gray-500">Nenhuma atividade recente</p>
-                </div>
-              )}
-            </div>
+              ))
+            )}
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-sm border border-gray-100">
-        <div className="p-6 border-b border-gray-100">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold text-gray-900">Performance da Equipe</h2>
-            <div className="text-sm text-gray-500">
-              Período: {periodOptions.find(p => p.value === filter.period)?.label}
+      {/* Quick Actions */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 className="text-lg font-semibold text-dark-900 mb-6">Ações Rápidas</h2>
+        
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button 
+            onClick={handleNewInstance}
+            className="flex flex-col items-center space-y-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="bg-primary-100 p-3 rounded-full">
+              <Plus className="w-6 h-6 text-primary-600" />
             </div>
-          </div>
-        </div>
-        <div className="p-6">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="text-left border-b border-gray-100">
-                  <th className="pb-3 text-sm font-medium text-gray-600">Operador</th>
-                  <th className="pb-3 text-sm font-medium text-gray-600">Atendimentos</th>
-                  <th className="pb-3 text-sm font-medium text-gray-600">Tempo Médio</th>
-                  <th className="pb-3 text-sm font-medium text-gray-600">Satisfação</th>
-                  <th className="pb-3 text-sm font-medium text-gray-600">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {data?.teamPerformance?.length ? data.teamPerformance.map((member) => (
-                  <tr key={member.userId}>
-                    <td className="py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-sm font-medium text-blue-600">
-                            {member.userName.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium text-gray-900">{member.userName}</p>
-                          <p className="text-xs text-gray-500">Operador</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-4 text-sm text-gray-900">{member.conversationsToday}</td>
-                    <td className="py-4 text-sm text-gray-900">{formatTime(member.avgResponseTime)}</td>
-                    <td className="py-4">
-                      <div className="flex items-center gap-1">
-                        <TrendingUp className="w-4 h-4 text-green-500" />
-                        <span className="text-sm text-gray-900">{member.satisfaction}%</span>
-                      </div>
-                    </td>
-                    <td className="py-4">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                        member.status === 'online' ? 'bg-green-100 text-green-800' :
-                        member.status === 'away' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {member.status === 'online' ? 'Online' :
-                         member.status === 'away' ? 'Ausente' : 'Offline'}
-                      </span>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={5} className="py-8 text-center">
-                      <p className="text-gray-500">Nenhum membro da equipe encontrado</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+            <span className="text-sm font-medium text-dark-900">Nova Instância</span>
+          </button>
+          
+          <button 
+            onClick={handleMessages}
+            className="flex flex-col items-center space-y-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="bg-secondary-100 p-3 rounded-full">
+              <MessageSquare className="w-6 h-6 text-secondary-600" />
+            </div>
+            <span className="text-sm font-medium text-dark-900">Mensagens</span>
+          </button>
+          
+          <button 
+            onClick={handleContacts}
+            className="flex flex-col items-center space-y-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="bg-yellow-100 p-3 rounded-full">
+              <Users className="w-6 h-6 text-yellow-600" />
+            </div>
+            <span className="text-sm font-medium text-dark-900">Contatos</span>
+          </button>
+          
+          <button 
+            onClick={handleReports}
+            className="flex flex-col items-center space-y-2 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            <div className="bg-green-100 p-3 rounded-full">
+              <BarChart3 className="w-6 h-6 text-green-600" />
+            </div>
+            <span className="text-sm font-medium text-dark-900">Relatórios</span>
+          </button>
         </div>
       </div>
 
-      {/* Debug Component - Temporary */}
-      <InstanceTest />
-
-      {/* Confirmation Modal */}
-      {confirmTerminate && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl p-6 w-96 max-w-sm mx-4">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-red-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">Encerrar Instância</h3>
-                <p className="text-sm text-gray-600">Esta ação não pode ser desfeita</p>
-              </div>
-            </div>
-            
-            <div className="mb-6">
-              <p className="text-sm text-gray-700 mb-2">
-                Tem certeza que deseja encerrar permanentemente a instância:
-              </p>
-              <p className="font-medium text-gray-900 bg-gray-50 p-3 rounded-md">
-                {confirmTerminate.instanceName}
-              </p>
-              <div className="mt-3 text-sm text-gray-600 space-y-1">
-                <p>• A instância será desconectada do WhatsApp</p>
-                <p>• Todas as conversas serão removidas</p>
-                <p>• Esta ação é irreversível</p>
-              </div>
-            </div>
-            
-            <div className="flex gap-3 justify-end">
-              <button
-                onClick={() => setConfirmTerminate(null)}
-                disabled={!!terminating}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => handleTerminateInstance(confirmTerminate.instanceId)}
-                disabled={!!terminating}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {terminating ? (
-                  <span className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Encerrando...
-                  </span>
-                ) : (
-                  'Sim, Encerrar'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* New Instance Modal */}
+      {showNewInstanceModal && (
+        <NewInstanceModal 
+          onClose={() => setShowNewInstanceModal(false)}
+          onSuccess={() => loadDashboardData()}
+        />
       )}
     </div>
   );
-}
+};
+
+// New Instance Modal Component
+const NewInstanceModal: React.FC<{ onClose: () => void; onSuccess: () => void }> = ({ onClose, onSuccess }) => {
+  const [instanceName, setInstanceName] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!instanceName.trim()) return;
+
+    setIsCreating(true);
+    try {
+      const response = await api.post('/whatsapp/instances', {
+        name: instanceName.trim()
+      });
+      
+      if (response.data.success) {
+        console.log('✅ Instance created:', instanceName);
+        onClose();
+        onSuccess();
+      }
+    } catch (error: any) {
+      console.error('❌ Error creating instance:', error);
+      alert(error.response?.data?.message || 'Erro ao criar instância');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg w-full max-w-md mx-4">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 className="text-lg font-semibold text-gray-900">Nova Instância WhatsApp</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleCreate} className="p-4">
+          <div className="mb-4">
+            <label htmlFor="instanceName" className="block text-sm font-medium text-gray-700 mb-2">
+              Nome da Instância
+            </label>
+            <input
+              type="text"
+              id="instanceName"
+              value={instanceName}
+              onChange={(e) => setInstanceName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              placeholder="Ex: Atendimento Comercial"
+              required
+              disabled={isCreating}
+            />
+          </div>
+
+          <div className="flex space-x-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              disabled={isCreating}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              className="flex-1 px-4 py-2 bg-primary-gradient text-white rounded-lg hover:shadow-primary-lg transition-all disabled:opacity-50"
+              disabled={isCreating || !instanceName.trim()}
+            >
+              {isCreating ? 'Criando...' : 'Criar Instância'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

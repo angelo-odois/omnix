@@ -12,7 +12,17 @@ import {
   Tag,
   UserPlus,
   Database,
-  FileText
+  FileText,
+  Menu,
+  ShoppingCart,
+  Star,
+  Users,
+  Timer,
+  CheckSquare,
+  BarChart3,
+  Send,
+  Bot,
+  Pause
 } from 'lucide-react';
 import { WorkflowNodeType, WorkflowTriggerType, WorkflowActionType } from '../../types/workflow';
 
@@ -155,6 +165,75 @@ const nodeTemplates: NodeTemplate[] = [
     description: 'Salva informações personalizadas',
     subtype: WorkflowActionType.SAVE_DATA
   },
+
+  // WHATSAPP SPECIFIC NODES
+  {
+    id: 'action-quick-reply',
+    type: WorkflowNodeType.ACTION,
+    label: 'Respostas Rápidas',
+    icon: Menu,
+    color: 'bg-primary-500',
+    description: 'Exibe menu de respostas rápidas',
+    subtype: 'QUICK_REPLY'
+  },
+  {
+    id: 'action-list-message',
+    type: WorkflowNodeType.ACTION,
+    label: 'Lista Interativa',
+    icon: CheckSquare,
+    color: 'bg-primary-600',
+    description: 'Envia lista interativa do WhatsApp',
+    subtype: 'LIST_MESSAGE'
+  },
+  {
+    id: 'action-button-message',
+    type: WorkflowNodeType.ACTION,
+    label: 'Botões',
+    icon: Square,
+    color: 'bg-primary-700',
+    description: 'Mensagem com botões interativos',
+    subtype: 'BUTTON_MESSAGE'
+  },
+
+  // CRM/FUNNEL INTEGRATION  
+  {
+    id: 'action-lead-score',
+    type: WorkflowNodeType.ACTION,
+    label: 'Score do Lead',
+    icon: Star,
+    color: 'bg-yellow-500',
+    description: 'Calcula e atualiza score do lead',
+    subtype: 'LEAD_SCORE'
+  },
+  {
+    id: 'action-move-stage',
+    type: WorkflowNodeType.ACTION,
+    label: 'Mover Etapa',
+    icon: BarChart3,
+    color: 'bg-yellow-600',
+    description: 'Move contato para etapa do funil',
+    subtype: 'MOVE_STAGE'
+  },
+  {
+    id: 'action-notify-team',
+    type: WorkflowNodeType.ACTION,
+    label: 'Notificar Equipe',
+    icon: Users,
+    color: 'bg-blue-600',
+    description: 'Notifica equipe sobre evento importante',
+    subtype: 'NOTIFY_TEAM'
+  },
+
+  // AI INTEGRATION
+  {
+    id: 'action-ai-response',
+    type: WorkflowNodeType.ACTION,
+    label: 'Resposta IA',
+    icon: Bot,
+    color: 'bg-purple-600',
+    description: 'Gera resposta usando inteligência artificial',
+    subtype: 'AI_RESPONSE'
+  },
   
   // OTHERS
   {
@@ -189,24 +268,25 @@ export default function WorkflowSidebar({ onDragStart }: WorkflowSidebarProps) {
     )
   };
 
-  const renderNodeGroup = (title: string, nodes: NodeTemplate[]) => (
+  const renderNodeGroup = (title: string, nodes: NodeTemplate[], emoji: string) => (
     <div className="mb-6">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+      <h3 className="text-sm font-semibold text-dark-700 mb-3 uppercase tracking-wide flex items-center">
+        <span className="mr-2">{emoji}</span>
         {title}
       </h3>
       <div className="space-y-2">
         {nodes.map((template) => (
           <div
             key={template.id}
-            className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-sm cursor-grab active:cursor-grabbing transition-all"
+            className="flex items-center gap-3 p-3 bg-white rounded-xl border border-gray-200 hover:border-primary-300 hover:shadow-md cursor-grab active:cursor-grabbing transition-all group"
             draggable
             onDragStart={(e) => onDragStart(e, template.type, template)}
           >
-            <div className={`p-2 rounded-lg ${template.color} text-white flex-shrink-0`}>
+            <div className={`p-2 rounded-lg ${template.color} text-white flex-shrink-0 group-hover:scale-110 transition-transform`}>
               <template.icon className="w-4 h-4" />
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-gray-900 truncate">
+              <div className="text-sm font-medium text-dark-900 truncate">
                 {template.label}
               </div>
               <div className="text-xs text-gray-500 truncate">
@@ -229,10 +309,10 @@ export default function WorkflowSidebar({ onDragStart }: WorkflowSidebarProps) {
       </div>
       
       <div className="p-4">
-        {renderNodeGroup('Gatilhos', groupedNodes.triggers)}
-        {renderNodeGroup('Condições', groupedNodes.conditions)}
-        {renderNodeGroup('Ações', groupedNodes.actions)}
-        {renderNodeGroup('Outros', groupedNodes.others)}
+        {renderNodeGroup('Gatilhos', groupedNodes.triggers, '⚡')}
+        {renderNodeGroup('Condições', groupedNodes.conditions, '🤔')}
+        {renderNodeGroup('Ações', groupedNodes.actions, '🚀')}
+        {renderNodeGroup('Outros', groupedNodes.others, '⚙️')}
       </div>
     </div>
   );

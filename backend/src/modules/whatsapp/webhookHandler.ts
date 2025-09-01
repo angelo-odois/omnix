@@ -181,9 +181,11 @@ class WhatsAppWebhookHandler {
 
       // Extract phone number from WhatsApp format
       const phoneNumber = payload.from.replace('@c.us', '');
+      console.log(`📥 Processing message from ${phoneNumber} to instance ${instance.name}`);
       
       // Get WhatsApp profile info for better contact identification
       let contactName = (payload as any).pushName || (payload as any).notifyName || phoneNumber;
+      console.log(`📛 Initial contact name: ${contactName}`);
       let profilePicUrl = null;
       
       // Get session name from instance
@@ -210,15 +212,19 @@ class WhatsAppWebhookHandler {
         }
       }
       
-      // Find or create contact with WhatsApp profile info
-      const contact = await contactService.findOrCreateContact(
+      console.log(`🔍 Finding/creating contact for ${phoneNumber} with name: ${contactName}`);
+      
+      // Find or create contact with WhatsApp profile info (webhook auto-creation)
+      const contact = await contactService.findOrCreateContactForWebhook(
         tenantId, 
         phoneNumber, 
         contactName
       );
       
+      console.log(`👤 Contact result:`, contact ? `${contact.name} (${contact.id})` : 'null');
+      
       // Update contact with profile pic if available
-      if (profilePicUrl && !contact.avatar) {
+      if (contact && profilePicUrl && !contact.avatar) {
         try {
           await contactService.updateContact(contact.id, { 
             customFields: { 
@@ -247,7 +253,7 @@ class WhatsAppWebhookHandler {
             tenantId,
             whatsappInstanceId: instanceId,
             contactPhone: phoneNumber,
-            contactName: contact.name, // Use contact name
+            contactName: contact?.name, // Use contact name if available
             lastMessageAt: new Date(payload.timestamp * 1000),
             unreadCount: 1
           }

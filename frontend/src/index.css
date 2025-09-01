@@ -2,5 +2,18 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Import custom scrollbar styles */
-@import './styles/scrollbar.css';
+/* Omnix Brand CSS Variables - Following Landing Page */
+:root {
+  --primary: #25D366;
+  --primary-dark: #128C7E;
+  --secondary: #075E54;
+  --dark: #1C1E21;
+  --light: #F8F9FA;
+  --gray: #6C757D;
+  --white: #FFFFFF;
+  --gradient: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  --shadow-sm: 0 2px 4px rgba(0,0,0,0.1);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.15);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.2);
+  --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}

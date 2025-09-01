@@ -200,8 +200,8 @@ class WhatsAppService {
         wahaMessage = await wahaClient.sendTextMessage(sessionName, chatId, data.message);
       }
 
-      // Find or create contact first
-      const contact = await contactService.findOrCreateContact(
+      // Find existing contact (don't create for outgoing messages)
+      const contact = await contactService.findContact(
         instance.tenantId, 
         data.to
       );
@@ -220,7 +220,7 @@ class WhatsAppService {
             tenantId: instance.tenantId,
             whatsappInstanceId: instanceId,
             contactPhone: data.to,
-            contactName: contact.name, // Use contact name
+            contactName: contact?.name, // Use contact name if available
             lastMessageAt: new Date(),
             unreadCount: 0
           }

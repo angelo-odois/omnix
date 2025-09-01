@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { dashboardService, type DashboardData, type PeriodFilter } from '../services/dashboardService';
-import { useNotificationStore } from '../store/notificationStore';
 import { api } from '../lib/api';
 
 interface UseDashboardState {
@@ -32,7 +31,6 @@ export const useDashboard = (options: UseDashboardOptions = {}) => {
 
   const [filter, setFilter] = useState<PeriodFilter>(initialFilter);
   const intervalRef = useRef<NodeJS.Timeout>();
-  const { addNotification } = useNotificationStore();
 
   const fetchDashboardData = useCallback(async (showLoading = true) => {
     try {
@@ -242,7 +240,7 @@ export const useDashboard = (options: UseDashboardOptions = {}) => {
 
       return mockData;
     }
-  }, [filter, addNotification]);
+  }, [filter]);
 
   const refreshData = useCallback(async () => {
     return fetchDashboardData(false);
@@ -259,32 +257,22 @@ export const useDashboard = (options: UseDashboardOptions = {}) => {
       // Simular exportação enquanto API não está implementada
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      addNotification({
-        type: 'success',
-        title: 'Exportação Simulada',
-        message: `Dados preparados para exportação em formato ${format.toUpperCase()}`,
-        priority: 'normal'
-      });
+      console.log('✅ Export simulated:', format.toUpperCase());
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao exportar dados';
       
-      addNotification({
-        type: 'warning',
-        title: 'Erro na Exportação',
-        message: errorMessage,
-        priority: 'normal'
-      });
+      console.error('❌ Export error:', errorMessage);
     } finally {
       setState(prev => ({ ...prev, loading: false }));
     }
-  }, [filter, addNotification]);
+  }, [filter]);
 
   const clearCache = useCallback(async () => {
     try {
       await fetchDashboardData(true);
       
-      addNotification({
+      console.log({
         type: 'success',
         title: 'Cache Limpo',
         message: 'Dados atualizados com sucesso',
@@ -293,14 +281,9 @@ export const useDashboard = (options: UseDashboardOptions = {}) => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Erro ao limpar cache';
       
-      addNotification({
-        type: 'warning',
-        title: 'Erro ao Limpar Cache',
-        message: errorMessage,
-        priority: 'normal'
-      });
+      console.error('❌ Clear cache error:', errorMessage);
     }
-  }, [fetchDashboardData, addNotification]);
+  }, [fetchDashboardData]);
 
   // Initial data fetch
   useEffect(() => {

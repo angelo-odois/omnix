@@ -68,21 +68,7 @@ const navItems: NavItem[] = [
     icon: Settings, 
     path: '/settings', 
     roles: ['super_admin', 'tenant_admin'],
-    description: 'Configurações do sistema'
-  },
-  { 
-    label: 'IA & Prompts', 
-    icon: Brain, 
-    path: '/ai-prompts', 
-    roles: ['super_admin', 'tenant_admin'],
-    description: 'Gerenciar prompts e scripts de IA'
-  },
-  { 
-    label: 'Todas Instâncias', 
-    icon: Phone, 
-    path: '/all-instances', 
-    roles: ['super_admin'],
-    description: 'Gerenciar todas as instâncias'
+    description: 'Configurações gerais, IA, usuários e instâncias'
   },
 ];
 
@@ -113,29 +99,29 @@ export default function Sidebar() {
     <aside 
       {...withLayoutId('Sidebar')}
       className={cn(
-        'bg-gray-900 text-white h-screen transition-all duration-300 flex flex-col',
+        'bg-gradient-to-b from-surface-800 to-surface-900 text-white h-screen transition-all duration-300 flex flex-col shadow-2xl',
         collapsed ? 'w-16' : 'w-64'
       )}
       data-collapsed={collapsed}
     >
-      <div {...withComponentId('SidebarHeader')} className="p-4 border-b border-gray-800">
+      <div {...withComponentId('SidebarHeader')} className="p-4 border-b border-dark-500/30">
         <div className="flex items-center justify-between">
           <div className={cn('flex items-center gap-3', collapsed && 'hidden')}>
-            <div {...withComponentId('SidebarHeader', 'logo')} className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
-              <MessageSquare className="w-6 h-6" />
+            <div {...withComponentId('SidebarHeader', 'logo')} className="w-10 h-10 bg-gradient-to-br from-whatsapp-500 to-whatsapp-600 rounded-xl flex items-center justify-center shadow-lg ring-2 ring-whatsapp-300/50">
+              <MessageSquare className="w-6 h-6 text-white" />
             </div>
             <div {...withComponentId('SidebarHeader', 'brand')}>
-              <h1 className="font-bold text-lg">{tenant?.name || 'OmniX'}</h1>
-              <p className="text-xs text-gray-400">WhatsApp Business</p>
+              <h1 className="font-bold text-lg bg-gradient-to-r from-white to-whatsapp-100 bg-clip-text text-transparent">{tenant?.name || 'OmniX'}</h1>
+              <p className="text-xs text-whatsapp-200">Atendimento Inteligente</p>
             </div>
           </div>
           <button
             {...withComponentId('SidebarHeader', 'toggle')}
             onClick={() => setCollapsed(!collapsed)}
-            className="p-1 hover:bg-gray-800 rounded"
+            className="p-1 hover:bg-dark-500/50 rounded-lg transition-colors"
             data-action="toggle-sidebar"
           >
-            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
+            {collapsed ? <ChevronRight size={20} className="text-neutral-300" /> : <ChevronLeft size={20} className="text-neutral-300" />}
           </button>
         </div>
       </div>
@@ -144,7 +130,7 @@ export default function Sidebar() {
         {loading ? (
           <div {...withComponentId('SidebarNav', 'loading')} className="space-y-2">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="h-10 bg-gray-800 rounded animate-pulse"></div>
+              <div key={i} className="h-10 bg-dark-500/50 rounded-xl animate-pulse"></div>
             ))}
           </div>
         ) : (
@@ -159,9 +145,10 @@ export default function Sidebar() {
                     to={item.path}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-3 px-3 py-2 rounded-lg transition-colors relative',
-                        'hover:bg-gray-800',
-                        isActive && 'bg-gray-800 text-blue-400',
+                        'flex items-center gap-3 px-3 py-2 rounded-xl transition-all duration-200 relative group',
+                        'hover:bg-whatsapp-500/20 hover:shadow-lg',
+                        isActive && 'bg-gradient-to-r from-whatsapp-500 to-whatsapp-600 text-white shadow-lg scale-105',
+                        !isActive && 'text-neutral-300',
                         collapsed && 'justify-center',
                         !hasRequiredModules && 'opacity-60'
                       )

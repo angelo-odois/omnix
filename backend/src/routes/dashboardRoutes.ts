@@ -1,17 +1,16 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/authV2';
+import { authenticate, AuthRequest } from '../middlewares/authV2';
 import { Request, Response } from 'express';
-import { db } from '../lib/database';
+import prisma from '../lib/database';
 
 const router = Router();
 
 // Apply auth middleware to all routes
-router.use(authMiddleware);
+router.use(authenticate);
 
-// Dashboard metrics endpoint
-router.get('/metrics', async (req: Request, res: Response) => {
+// Dashboard metrics endpoint (simplified for new dashboard)
+router.get('/metrics', async (req: AuthRequest, res: Response) => {
   try {
-    const { period = 'today' } = req.query;
     const tenantId = req.user?.tenantId;
 
     if (!tenantId) {
@@ -21,136 +20,49 @@ router.get('/metrics', async (req: Request, res: Response) => {
       });
     }
 
-    // Calculate date range based on period
+    // Get total counts
+    const [totalMessages, totalConversations, totalInstances, connectedInstances] = await Promise.all([
+      prisma.message.count({ where: { tenantId } }),
+      prisma.conversation.count({ where: { tenantId } }),
+      prisma.whatsAppInstance.count({ where: { tenantId } }),
+      prisma.whatsAppInstance.count({ where: { tenantId, status: 'connected' } })
+    ]);
+
+    // Get previous period data for growth calculation (last 30 days vs previous 30 days)
     const now = new Date();
-    let startDate: Date;
-    
-    switch (period) {
-      case 'week':
-        startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        break;
-      case 'month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-        break;
-      case 'year':
-        startDate = new Date(now.getFullYear(), 0, 1);
-        break;
-      default: // today
-        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    }
+    const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
 
-    // Get conversations metrics
-    const [totalConversations, activeConversations, unreadConversations] = await Promise.all([
-      db.conversation.count({
-        where: { tenantId, createdAt: { gte: startDate } }
-      }),
-      db.conversation.count({
-        where: { 
-          tenantId, 
-          lastMessageAt: { gte: startDate },
-          isArchived: false
-        }
-      }),
-      db.conversation.count({
-        where: { 
-          tenantId, 
-          unreadCount: { gt: 0 },
-          isArchived: false
-        }
-      })
-    ]);
-
-    // Get contacts metrics
-    const [totalContacts, newContacts] = await Promise.all([
-      db.contact.count({ where: { tenantId } }),
-      db.contact.count({
-        where: { tenantId, createdAt: { gte: startDate } }
-      })
-    ]);
-
-    // Get instances metrics
-    const [totalInstances, connectedInstances, disconnectedInstances, errorInstances] = await Promise.all([
-      db.whatsAppInstance.count({ where: { tenantId } }),
-      db.whatsAppInstance.count({
-        where: { tenantId, status: 'connected' }
-      }),
-      db.whatsAppInstance.count({
-        where: { tenantId, status: 'disconnected' }
-      }),
-      db.whatsAppInstance.count({
-        where: { tenantId, status: 'error' }
-      })
-    ]);
-
-    // Get messages metrics
-    const messagesCount = await db.message.count({
-      where: { 
+    const [messagesRecent, conversationsRecent, messagesPrevious, conversationsPrevious] = await Promise.all([
+      prisma.message.count({ where: { tenantId, createdAt: { gte: thirtyDaysAgo } } }),
+      prisma.conversation.count({ where: { tenantId, createdAt: { gte: thirtyDaysAgo } } }),
+      prisma.message.count({ where: { 
         tenantId, 
-        createdAt: { gte: startDate }
-      }
-    });
-
-    const thisWeekStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const [messagesThisWeek, messagesThisMonth] = await Promise.all([
-      db.message.count({
-        where: { tenantId, createdAt: { gte: thisWeekStart } }
-      }),
-      db.message.count({
-        where: { tenantId, createdAt: { gte: thisMonthStart } }
-      })
+        createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } 
+      } }),
+      prisma.conversation.count({ where: { 
+        tenantId, 
+        createdAt: { gte: sixtyDaysAgo, lt: thirtyDaysAgo } 
+      } })
     ]);
 
-    // Calculate average response time (simplified)
-    const avgResponseTime = 4.2; // TODO: Implement real calculation
+    // Calculate growth percentages
+    const messagesGrowth = messagesPrevious > 0 
+      ? ((messagesRecent - messagesPrevious) / messagesPrevious) * 100 
+      : messagesRecent > 0 ? 100 : 0;
+    
+    const conversationsGrowth = conversationsPrevious > 0 
+      ? ((conversationsRecent - conversationsPrevious) / conversationsPrevious) * 100 
+      : conversationsRecent > 0 ? 100 : 0;
 
-    // Get workflows metrics
-    const [totalWorkflows, activeWorkflows] = await Promise.all([
-      db.workflow.count({ where: { tenantId } }),
-      db.workflow.count({
-        where: { tenantId, isActive: true }
-      })
-    ]);
-
-    const workflowExecutions = await db.workflowExecution.count({
-      where: {
-        tenantId,
-        startedAt: { gte: startDate }
-      }
-    });
-
+    // Simplified response format for the new dashboard
     const metrics = {
-      conversations: {
-        total: totalConversations,
-        active: activeConversations,
-        unread: unreadConversations,
-        change: 8.5 // TODO: Calculate real change
-      },
-      contacts: {
-        total: totalContacts,
-        new: newContacts,
-        change: 5.2 // TODO: Calculate real change
-      },
-      instances: {
-        total: totalInstances,
-        connected: connectedInstances,
-        disconnected: disconnectedInstances,
-        error: errorInstances
-      },
-      messages: {
-        today: messagesCount,
-        thisWeek: messagesThisWeek,
-        thisMonth: messagesThisMonth,
-        avgResponseTime: avgResponseTime,
-        change: -12.3 // TODO: Calculate real change
-      },
-      workflows: {
-        total: totalWorkflows,
-        active: activeWorkflows,
-        executionsToday: workflowExecutions,
-        change: 15.7 // TODO: Calculate real change
-      }
+      totalMessages,
+      totalConversations,
+      activeInstances: connectedInstances,
+      responseTime: 4.2, // TODO: Calculate real response time
+      messagesGrowth: Number(messagesGrowth.toFixed(1)),
+      conversationsGrowth: Number(conversationsGrowth.toFixed(1))
     };
 
     res.json({
@@ -168,7 +80,7 @@ router.get('/metrics', async (req: Request, res: Response) => {
 });
 
 // Get instances with today's message count
-router.get('/instances', async (req: Request, res: Response) => {
+router.get('/instances', async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId;
 
@@ -182,7 +94,7 @@ router.get('/instances', async (req: Request, res: Response) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const instances = await db.whatsAppInstance.findMany({
+    const instances = await prisma.whatsAppInstance.findMany({
       where: { tenantId },
       select: {
         id: true,
@@ -196,7 +108,7 @@ router.get('/instances', async (req: Request, res: Response) => {
     // Get message counts for each instance
     const instancesWithMessages = await Promise.all(
       instances.map(async (instance) => {
-        const messagesToday = await db.message.count({
+        const messagesToday = await prisma.message.count({
           where: {
             tenantId,
             createdAt: { gte: today },
@@ -226,7 +138,7 @@ router.get('/instances', async (req: Request, res: Response) => {
 });
 
 // Get recent activity
-router.get('/activity', async (req: Request, res: Response) => {
+router.get('/activity', async (req: AuthRequest, res: Response) => {
   try {
     const { limit = 20 } = req.query;
     const tenantId = req.user?.tenantId;
@@ -239,7 +151,7 @@ router.get('/activity', async (req: Request, res: Response) => {
     }
 
     // Get recent conversations
-    const recentConversations = await db.conversation.findMany({
+    const recentConversations = await prisma.conversation.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
       take: Number(limit) / 2,
@@ -252,7 +164,7 @@ router.get('/activity', async (req: Request, res: Response) => {
     });
 
     // Get recent messages
-    const recentMessages = await db.message.findMany({
+    const recentMessages = await prisma.message.findMany({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
       take: Number(limit) / 2,
@@ -304,7 +216,7 @@ router.get('/activity', async (req: Request, res: Response) => {
 });
 
 // Get team performance
-router.get('/team', async (req: Request, res: Response) => {
+router.get('/team', async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId;
 
@@ -316,7 +228,7 @@ router.get('/team', async (req: Request, res: Response) => {
     }
 
     // Get team members (users in this tenant)
-    const teamMembers = await db.user.findMany({
+    const teamMembers = await prisma.user.findMany({
       where: { 
         tenantId,
         isActive: true,
@@ -357,7 +269,7 @@ router.get('/team', async (req: Request, res: Response) => {
 });
 
 // Get complete dashboard data
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const tenantId = req.user?.tenantId;
 

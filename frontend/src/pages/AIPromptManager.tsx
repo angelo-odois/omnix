@@ -73,7 +73,6 @@ export default function AIPromptManager() {
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<any>(null);
-  const [cacheStats, setCacheStats] = useState<any>(null);
 
   // Form states
   const [formData, setFormData] = useState({
@@ -89,17 +88,7 @@ export default function AIPromptManager() {
 
   useEffect(() => {
     loadData();
-    loadCacheStats();
   }, []);
-
-  const loadCacheStats = async () => {
-    try {
-      const response = await api.get('/ai/cache/stats');
-      setCacheStats(response.data.data);
-    } catch (error) {
-      console.error('Error loading cache stats:', error);
-    }
-  };
 
   const loadData = async () => {
     try {
@@ -294,75 +283,15 @@ export default function AIPromptManager() {
           <p className="text-gray-600 mt-1">Configure prompts e scripts personalizados para o assistente IA</p>
         </div>
         
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={loadCacheStats}
-            className="flex items-center px-3 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Atualizar Cache
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Prompt
-          </button>
-        </div>
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Novo Prompt
+        </button>
       </div>
 
-      {/* Cache Stats Panel */}
-      {cacheStats && (
-        <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-green-900 flex items-center">
-              💾 Cache Inteligente OpenAI
-            </h2>
-            <div className="flex items-center space-x-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-sm text-green-700">Ativo</span>
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <div className="text-2xl font-bold text-green-700">{cacheStats.totalHits}</div>
-              <div className="text-sm text-green-600">Cache Hits</div>
-              <div className="text-xs text-gray-500 mt-1">Requisições poupadas</div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <div className="text-2xl font-bold text-green-700">{(cacheStats.hitRate * 100).toFixed(1)}%</div>
-              <div className="text-sm text-green-600">Taxa de Acerto</div>
-              <div className="text-xs text-gray-500 mt-1">Eficiência do cache</div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <div className="text-2xl font-bold text-green-700">${cacheStats.costSavings || '0.00'}</div>
-              <div className="text-sm text-green-600">Economia USD</div>
-              <div className="text-xs text-gray-500 mt-1">Créditos poupados</div>
-            </div>
-            
-            <div className="bg-white rounded-lg p-4 border border-green-200">
-              <div className="text-2xl font-bold text-green-700">{cacheStats.totalEntries}</div>
-              <div className="text-sm text-green-600">Conversas Cached</div>
-              <div className="text-xs text-gray-500 mt-1">Em memória</div>
-            </div>
-          </div>
-          
-          <div className="mt-4 p-3 bg-white rounded-lg border border-green-200">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-green-700">
-                <strong>💡 Cache Inteligente:</strong> Reutiliza análises similares por até 30 minutos
-              </span>
-              <span className="text-green-600 font-medium">
-                Próxima limpeza: {new Date(Date.now() + 10 * 60 * 1000).toLocaleTimeString()}
-              </span>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200">

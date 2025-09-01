@@ -3,6 +3,7 @@ import { authenticate, AuthRequest } from '../../middlewares/authV2';
 import { requireModule } from '../../middlewares/moduleAuth';
 import { SYSTEM_MODULES } from '../../types/modules';
 import contactService from './service';
+import prisma from '../../lib/database';
 
 const router = Router();
 
@@ -104,6 +105,59 @@ router.post('/', requireModule(SYSTEM_MODULES.CONTACTS, 'write'), async (req: Au
       customFields,
       groups
     });
+
+    // Update any existing conversation with this contact's name
+    try {
+      // First, let's see what conversations exist for this tenant
+      const existingConversations = await prisma.conversation.findMany({
+        where: { tenantId: req.user.tenantId },
+        select: { id: true, contactPhone: true, contactName: true }
+      });
+      
+      console.log(`📋 Existing conversations:`, existingConversations);
+      console.log(`🔍 Looking for conversations with phone: ${contact.phone}`);
+      
+      // Try to find conversations with this phone number (with different format variations)
+      const phoneVariations = [
+        contact.phone,
+        contact.phone.replace(/\D/g, ''), // Only numbers
+        contact.phone + '@c.us', // WhatsApp format
+        contact.phone.replace('@c.us', '') // Remove WhatsApp format
+      ];
+      
+      console.log(`📞 Phone variations to search:`, phoneVariations);
+
+      const updatedConversations = await prisma.conversation.updateMany({
+        where: {
+          tenantId: req.user.tenantId,
+          contactPhone: { in: phoneVariations },
+          contactName: null // Only update if no name is set
+        },
+        data: {
+          contactName: contact.name
+        }
+      });
+      
+      console.log(`✅ Updated ${updatedConversations.count} conversations for ${contact.phone} to ${contact.name}`);
+      
+      // If no conversations were updated, try without the contactName filter
+      if (updatedConversations.count === 0) {
+        console.log(`🔄 No conversations updated, trying without contactName filter...`);
+        const fallbackUpdate = await prisma.conversation.updateMany({
+          where: {
+            tenantId: req.user.tenantId,
+            contactPhone: { in: phoneVariations }
+          },
+          data: {
+            contactName: contact.name
+          }
+        });
+        console.log(`🔄 Fallback updated ${fallbackUpdate.count} conversations`);
+      }
+    } catch (updateError) {
+      // Don't fail the contact creation if conversation update fails
+      console.warn('Failed to update conversation name:', updateError);
+    }
     
     res.json({
       success: true,
@@ -141,8 +195,42 @@ router.put('/:id', requireModule(SYSTEM_MODULES.CONTACTS, 'write'), async (req: 
   }
 });
 
-// Find or create contact (used by message system)
-router.post('/find-or-create', requireModule(SYSTEM_MODULES.CONTACTS, 'write'), async (req: AuthRequest, res: Response) => {
+// Find contact (no automatic creation)
+router.get('/find/:phone', requireModule(SYSTEM_MODULES.CONTACTS, 'read'), async (req: AuthRequest, res: Response) => {
+  try {
+    if (!req.user?.tenantId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Tenant não identificado'
+      });
+    }
+
+    const { phone } = req.params;
+
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Telefone é obrigatório'
+      });
+    }
+
+    const contact = await contactService.findContact(req.user.tenantId, phone);
+    
+    res.json({
+      success: true,
+      data: contact
+    });
+  } catch (error: any) {
+    console.error('Error finding contact:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao buscar contato'
+    });
+  }
+});
+
+// Legacy find-or-create endpoint - now only finds
+router.post('/find-or-create', requireModule(SYSTEM_MODULES.CONTACTS, 'read'), async (req: AuthRequest, res: Response) => {
   try {
     if (!req.user?.tenantId) {
       return res.status(400).json({
@@ -167,10 +255,59 @@ router.post('/find-or-create', requireModule(SYSTEM_MODULES.CONTACTS, 'write'), 
       data: contact
     });
   } catch (error: any) {
-    console.error('Error finding/creating contact:', error);
+    console.error('Error finding contact:', error);
     res.status(500).json({
       success: false,
-      message: error.message || 'Erro ao buscar/criar contato'
+      message: error.message || 'Erro ao buscar contato'
+    });
+  }
+});
+
+// Delete contact (admin only)
+router.delete('/:id', requireModule(SYSTEM_MODULES.CONTACTS, 'write'), async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const userRole = req.user?.role;
+
+    // Check if user has permission to delete contacts
+    if (!userRole || !['super_admin', 'tenant_admin', 'tenant_manager'].includes(userRole)) {
+      return res.status(403).json({
+        success: false,
+        message: 'Permissão insuficiente para excluir contatos'
+      });
+    }
+
+    // Check if contact exists and belongs to this tenant
+    const contact = await prisma.contact.findFirst({
+      where: {
+        id,
+        tenantId: req.user!.tenantId
+      }
+    });
+
+    if (!contact) {
+      return res.status(404).json({
+        success: false,
+        message: 'Contato não encontrado'
+      });
+    }
+
+    // Delete the contact
+    await prisma.contact.delete({
+      where: { id }
+    });
+
+    console.log(`🗑️ Contact deleted: ${contact.name} (${contact.phone}) by ${req.user?.email}`);
+
+    res.json({
+      success: true,
+      message: 'Contato excluído com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error deleting contact:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao excluir contato'
     });
   }
 });

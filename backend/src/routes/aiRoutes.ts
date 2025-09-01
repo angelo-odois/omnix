@@ -4,7 +4,6 @@ import { requireModule } from '../middlewares/moduleAuth';
 import { SYSTEM_MODULES } from '../types/modules';
 import aiService from '../services/aiService';
 import aiPromptService from '../services/aiPromptService';
-import aiCacheService from '../services/aiCacheService';
 import prisma from '../lib/database';
 
 const router = Router();
@@ -103,15 +102,14 @@ router.post('/suggest-responses', requireModule(SYSTEM_MODULES.MESSAGES, 'read')
     // Get sentiment analysis first
     const sentiment = await aiService.analyzeSentiment(messageContents, contactName);
     
-    // Generate suggestions based on sentiment (with caching)
+    // Generate suggestions based on sentiment
     const suggestions = await aiService.generateResponseSuggestions(
       messageContents,
       sentiment,
       contactName,
       businessContext,
       req.user?.tenantId,
-      req.body.customPromptId, // use custom prompt if provided
-      conversationId // enable caching
+      req.body.customPromptId
     );
 
     res.json({
@@ -412,113 +410,6 @@ router.get('/scripts', async (req: AuthRequest, res: Response) => {
     res.status(500).json({
       success: false,
       message: error.message || 'Erro ao buscar scripts'
-    });
-  }
-});
-
-// ============= CACHE MANAGEMENT =============
-
-// Get cache statistics
-router.get('/cache/stats', async (req: AuthRequest, res: Response) => {
-  try {
-    // Only admins can view cache stats
-    if (!['super_admin', 'tenant_admin'].includes(req.user?.role || '')) {
-      return res.status(403).json({
-        success: false,
-        message: 'Acesso negado'
-      });
-    }
-
-    const stats = aiCacheService.getCacheStats();
-    
-    res.json({
-      success: true,
-      data: {
-        ...stats,
-        creditsSaved: Math.floor(stats.totalHits * 0.002), // Estimate credits saved
-        costSavings: (stats.totalHits * 0.002 * 0.002).toFixed(4) // Rough USD estimate
-      }
-    });
-  } catch (error: any) {
-    console.error('Error getting cache stats:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Erro ao obter estatísticas'
-    });
-  }
-});
-
-// Clear conversation cache
-router.delete('/cache/:conversationId', async (req: AuthRequest, res: Response) => {
-  try {
-    const { conversationId } = req.params;
-    
-    await aiCacheService.invalidateCache(conversationId, 'manual clear by admin');
-    
-    res.json({
-      success: true,
-      message: 'Cache da conversa limpo com sucesso'
-    });
-  } catch (error: any) {
-    console.error('Error clearing cache:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Erro ao limpar cache'
-    });
-  }
-});
-
-// Force refresh conversation analysis
-router.post('/cache/:conversationId/refresh', async (req: AuthRequest, res: Response) => {
-  try {
-    const { conversationId } = req.params;
-    
-    // Clear existing cache
-    await aiCacheService.refreshConversationCache(conversationId);
-    
-    // Get fresh messages and re-analyze
-    const messages = await prisma.message.findMany({
-      where: { 
-        conversationId,
-        tenantId: req.user?.tenantId 
-      },
-      orderBy: { timestamp: 'desc' },
-      take: 10
-    });
-
-    if (messages.length > 0) {
-      const messageContents = messages
-        .reverse()
-        .map(msg => `${msg.isInbound ? 'Cliente' : 'Atendente'}: ${msg.content}`);
-
-      // Force new analysis
-      const sentiment = await aiService.analyzeSentiment(messageContents);
-      const suggestions = await aiService.generateResponseSuggestions(
-        messageContents,
-        sentiment,
-        undefined,
-        undefined,
-        req.user?.tenantId,
-        undefined,
-        conversationId
-      );
-
-      res.json({
-        success: true,
-        data: { sentiment, suggestions },
-        message: 'Análise atualizada com sucesso'
-      });
-    } else {
-      res.json({
-        success: false,
-        message: 'Nenhuma mensagem encontrada para analisar'
-      });
-    }
-  } catch (error: any) {
-    console.error('Error refreshing cache:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Erro ao atualizar análise'
     });
   }
 });

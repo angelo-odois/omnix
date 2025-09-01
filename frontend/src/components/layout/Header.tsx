@@ -1,6 +1,5 @@
 import { Search } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
-import NotificationCenter from '../notifications/NotificationCenter';
 
 export default function Header() {
   const { user } = useAuthStore();
@@ -20,8 +19,6 @@ export default function Header() {
         </div>
 
         <div className="flex items-center gap-4 ml-6">
-          <NotificationCenter />
-
           <div className="flex items-center gap-3">
             <div className="text-right">
               <p className="text-sm font-medium text-gray-900">{user?.name}</p>

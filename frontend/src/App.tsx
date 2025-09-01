@@ -16,8 +16,7 @@ import Workflows from './pages/Workflows';
 import AdminDashboard from './pages/AdminDashboard';
 import ModuleMarketplace from './pages/ModuleMarketplace';
 import Settings from './pages/Settings';
-import AllInstances from './pages/AllInstances';
-import AIPromptManager from './pages/AIPromptManager';
+import Reports from './pages/Reports';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -85,19 +84,15 @@ function App() {
                 <Workflows />
               </ModuleProtectedRoute>
             } />
+            <Route path="chat" element={
+              <ModuleProtectedRoute requiredModules={['messages']}>
+                <ChatV4 />
+              </ModuleProtectedRoute>
+            } />
+            <Route path="reports" element={<Reports />} />
             <Route path="settings" element={
               <ProtectedRoute roles={['super_admin', 'tenant_admin']}>
                 <Settings />
-              </ProtectedRoute>
-            } />
-            <Route path="all-instances" element={
-              <ProtectedRoute roles={['super_admin']}>
-                <AllInstances />
-              </ProtectedRoute>
-            } />
-            <Route path="ai-prompts" element={
-              <ProtectedRoute roles={['super_admin', 'tenant_admin']}>
-                <AIPromptManager />
               </ProtectedRoute>
             } />
           </Route>

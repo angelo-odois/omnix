@@ -129,7 +129,8 @@ class ContactService {
     // Check if contact already exists
     const existingContact = await this.getContactByPhone(tenantId, normalizedPhone);
     if (existingContact) {
-      throw new Error('Contato já existe com este número');
+      // Update existing contact instead of throwing error
+      return await this.updateContact(existingContact.id, data);
     }
 
     // Check limits
@@ -214,29 +215,61 @@ class ContactService {
     };
   }
 
-  async findOrCreateContact(tenantId: string, phone: string, name?: string): Promise<ContactData> {
+  // Find existing contact without creating automatically
+  async findContact(tenantId: string, phone: string): Promise<ContactData | null> {
+    const normalizedPhone = this.normalizePhoneNumber(phone);
+    return await this.getContactByPhone(tenantId, normalizedPhone);
+  }
+
+  // Legacy method - kept for backward compatibility but only returns existing contacts
+  async findOrCreateContact(tenantId: string, phone: string, name?: string): Promise<ContactData | null> {
     const normalizedPhone = this.normalizePhoneNumber(phone);
     
-    // Try to find existing contact
+    // Only find existing contact, don't create new ones
     let contact = await this.getContactByPhone(tenantId, normalizedPhone);
     
-    if (!contact) {
-      // Create new contact with detected name or phone as fallback
-      const contactName = name || this.extractNameFromPhone(normalizedPhone) || normalizedPhone;
-      
-      contact = await this.createContact(tenantId, {
-        name: contactName,
-        phone: normalizedPhone
-      });
-      
-      console.log(`✅ Novo contato criado: ${contactName} (${normalizedPhone})`);
-    } else if (name && name !== contact.name && name !== normalizedPhone) {
+    if (contact && name && name !== contact.name && name !== normalizedPhone) {
       // Update contact name if we have a better name
       contact = await this.updateContact(contact.id, { name });
       console.log(`✅ Contato atualizado: ${contact.name} (${normalizedPhone})`);
     }
 
     return contact;
+  }
+
+  // Special method for webhook processing - creates contacts for incoming messages
+  async findOrCreateContactForWebhook(tenantId: string, phone: string, name?: string): Promise<ContactData> {
+    try {
+      console.log(`🚀 Starting findOrCreateContactForWebhook for ${phone}`);
+      const normalizedPhone = this.normalizePhoneNumber(phone);
+      console.log(`📞 Normalized phone: ${normalizedPhone}`);
+      
+      // Try to find existing contact
+      let contact = await this.getContactByPhone(tenantId, normalizedPhone);
+      console.log(`🔍 Existing contact found:`, contact ? contact.name : 'none');
+      
+      if (!contact) {
+        // Create new contact with detected name or phone as fallback (only for webhooks)
+        const contactName = name || this.extractNameFromPhone(normalizedPhone) || normalizedPhone;
+        console.log(`🆕 Creating new contact with name: ${contactName}`);
+        
+        contact = await this.createContact(tenantId, {
+          name: contactName,
+          phone: normalizedPhone
+        });
+        
+        console.log(`✅ Novo contato criado via webhook: ${contactName} (${normalizedPhone})`);
+      } else if (name && name !== contact.name && name !== normalizedPhone) {
+        // Update contact name if we have a better name
+        contact = await this.updateContact(contact.id, { name });
+        console.log(`✅ Contato atualizado via webhook: ${contact.name} (${normalizedPhone})`);
+      }
+
+      return contact;
+    } catch (error) {
+      console.error('❌ Error in findOrCreateContactForWebhook:', error);
+      throw error;
+    }
   }
 
   // Helper methods

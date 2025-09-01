@@ -4,6 +4,7 @@ import { requireSuperAdmin, requireAdminAccess } from '../middlewares/adminAuth'
 import { adminService } from '../services/adminService';
 import { moduleService } from '../services/moduleService';
 import authServiceV2 from '../services/authServiceV2';
+import prisma from '../lib/database';
 
 const router = Router();
 
@@ -224,22 +225,29 @@ router.post('/tenants', async (req: AuthRequest, res: Response) => {
       });
     }
 
-    // Criar tenant no adminService
-    const newTenant = await adminService.createTenant(tenantData, req.user!.id);
-    
-    // Criar tenant no authServiceV2 também
-    const tenantResult = await authServiceV2.createTenant({
-      name: tenantData.name,
-      email: tenantData.email,
-      adminEmail: tenantData.adminEmail,
-      adminName: tenantData.adminName,
-      adminPassword: tenantData.adminPassword || 'temp123456', // Temporary password
+    // Create tenant directly in database
+    const newTenant = await prisma.tenant.create({
+      data: {
+        id: `tenant-${Date.now()}`,
+        name: tenantData.name,
+        email: tenantData.email,
+        domain: tenantData.domain || `${tenantData.name.toLowerCase().replace(/\s+/g, '-')}.omnix.local`,
+        packageId: tenantData.packageId || 'pkg-starter',
+        isActive: true
+      }
     });
 
-    if (!tenantResult.success) {
-      return res.status(400).json({
-        success: false,
-        message: tenantResult.message || 'Erro ao criar tenant'
+    // Create admin user for this tenant
+    if (tenantData.adminEmail && tenantData.adminName) {
+      await prisma.user.create({
+        data: {
+          id: `user-${Date.now()}`,
+          email: tenantData.adminEmail,
+          name: tenantData.adminName,
+          role: 'tenant_admin',
+          tenantId: newTenant.id,
+          isActive: true
+        }
       });
     }
     
@@ -412,20 +420,165 @@ router.post('/tenants/:id/change-plan', async (req: AuthRequest, res: Response) 
   }
 });
 
+// Atualizar tenant (incluindo mudança de plano)
+router.put('/tenants/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { name, email, domain, packageId, isActive } = req.body;
+
+    // Verificar se o tenant existe
+    const existingTenant = await prisma.tenant.findUnique({
+      where: { id }
+    });
+
+    if (!existingTenant) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tenant não encontrado'
+      });
+    }
+
+    // Verificar se o package existe (se fornecido)
+    if (packageId) {
+      const packageExists = await adminService.getPackageById(packageId);
+      if (!packageExists) {
+        return res.status(400).json({
+          success: false,
+          message: 'Pacote selecionado não existe'
+        });
+      }
+    }
+
+    // Atualizar tenant
+    const updatedTenant = await prisma.tenant.update({
+      where: { id },
+      data: {
+        ...(name && { name }),
+        ...(email && { email }),
+        ...(domain && { domain }),
+        ...(packageId && { packageId }),
+        ...(typeof isActive === 'boolean' && { isActive }),
+        updatedAt: new Date()
+      }
+    });
+
+    console.log(`✅ Tenant updated: ${updatedTenant.name} (${id}) by ${req.user?.email}`);
+
+    res.json({
+      success: true,
+      data: updatedTenant,
+      message: 'Tenant atualizado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error updating tenant:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao atualizar tenant'
+    });
+  }
+});
+
+// Mudar plano do tenant
+router.post('/tenants/:id/change-plan', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { packageId } = req.body;
+
+    if (!packageId) {
+      return res.status(400).json({
+        success: false,
+        message: 'PackageId é obrigatório'
+      });
+    }
+
+    // Verificar se o tenant existe
+    const existingTenant = await prisma.tenant.findUnique({
+      where: { id }
+    });
+
+    if (!existingTenant) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tenant não encontrado'
+      });
+    }
+
+    // Verificar se o package existe
+    const packageExists = await adminService.getPackageById(packageId);
+    if (!packageExists) {
+      return res.status(400).json({
+        success: false,
+        message: 'Pacote selecionado não existe'
+      });
+    }
+
+    // Atualizar tenant com novo package
+    const updatedTenant = await prisma.tenant.update({
+      where: { id },
+      data: {
+        packageId,
+        updatedAt: new Date()
+      }
+    });
+
+    console.log(`📦 Tenant plan changed: ${updatedTenant.name} → ${packageId} by ${req.user?.email}`);
+
+    // Simular resposta com dados de módulos alterados
+    const result = {
+      tenant: {
+        ...existingTenant,
+        packageId,
+        updatedAt: updatedTenant.updatedAt.toISOString()
+      },
+      modulesChanged: {
+        added: [],
+        removed: [],
+        updated: []
+      }
+    };
+
+    res.json({
+      success: true,
+      data: result,
+      message: 'Plano alterado com sucesso'
+    });
+  } catch (error: any) {
+    console.error('Error changing tenant plan:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Erro ao alterar plano'
+    });
+  }
+});
+
 // ============= USER MANAGEMENT =============
 
 // Listar todos os usuários do sistema
 router.get('/users', async (req: AuthRequest, res: Response) => {
   try {
-    const users = authServiceV2.getAllUsers();
-    const tenants = authServiceV2.getAllTenants();
+    // Get users from database with tenant info
+    const users = await prisma.user.findMany({
+      include: {
+        tenant: true
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     
-    // Enriquecer usuários com dados do tenant
+    // Format response
     const enrichedUsers = users.map(user => {
-      const tenant = user.tenantId ? tenants.find(t => t.id === user.tenantId) : null;
       return {
-        ...user,
-        tenant: tenant ? { id: tenant.id, name: tenant.name } : null
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        tenantId: user.tenantId,
+        isActive: user.isActive,
+        createdAt: user.createdAt.toISOString(),
+        updatedAt: user.updatedAt.toISOString(),
+        tenant: user.tenant ? { 
+          id: user.tenant.id, 
+          name: user.tenant.name 
+        } : null
       };
     });
     

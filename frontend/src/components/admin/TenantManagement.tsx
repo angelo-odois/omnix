@@ -174,9 +174,9 @@ export default function TenantManagement() {
                       </div>
                       
                       <div>
-                        <p><strong>Usuários:</strong> {tenant.usage.currentUsers}/{tenant.package?.limits.maxUsers === -1 ? '∞' : tenant.package?.limits.maxUsers}</p>
-                        <p><strong>Instâncias:</strong> {tenant.usage.currentInstances}/{tenant.package?.limits.maxInstances === -1 ? '∞' : tenant.package?.limits.maxInstances}</p>
-                        <p><strong>Mensagens/mês:</strong> {tenant.usage.messagesThisMonth.toLocaleString()}</p>
+                        <p><strong>Usuários:</strong> {tenant.usage?.currentUsers || 0}/{tenant.package?.limits?.maxUsers === -1 ? '∞' : tenant.package?.limits?.maxUsers || 'N/A'}</p>
+                        <p><strong>Instâncias:</strong> {tenant.usage?.currentInstances || 0}/{tenant.package?.limits?.maxInstances === -1 ? '∞' : tenant.package?.limits?.maxInstances || 'N/A'}</p>
+                        <p><strong>Mensagens/mês:</strong> {tenant.usage?.messagesThisMonth?.toLocaleString() || '0'}</p>
                       </div>
                     </div>
 

@@ -12,7 +12,6 @@ import {
   RefreshCw
 } from 'lucide-react';
 import { instanceService } from '../services/instanceService';
-import { useNotificationStore } from '../store/notificationStore';
 import { api } from '../lib/api';
 
 interface InstanceWithTenant {
@@ -33,7 +32,6 @@ export default function AllInstances() {
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState<{id: string; name: string; tenant: string} | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
-  const { addNotification } = useNotificationStore();
 
   const loadInstances = async () => {
     try {
@@ -44,12 +42,7 @@ export default function AllInstances() {
       setInstances(response.data.data || []);
     } catch (error) {
       console.error('Error loading instances:', error);
-      addNotification({
-        type: 'warning',
-        title: 'Erro ao carregar instâncias',
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        priority: 'normal'
-      });
+      console.error('❌ Error loading instances:', error instanceof Error ? error.message : 'Unknown error');
       // Usar dados mock como fallback
       setInstances([]);
     } finally {
@@ -100,12 +93,7 @@ export default function AllInstances() {
       const result = await instanceService.deleteInstance(confirmDelete.id);
       
       if (result.success) {
-        addNotification({
-          type: 'success',
-          title: 'Instância Removida',
-          message: `Instância ${confirmDelete.name} foi removida permanentemente`,
-          priority: 'normal'
-        });
+        console.log('✅ Instance deleted:', confirmDelete.name);
         
         // Reload instances
         await loadInstances();
@@ -114,12 +102,7 @@ export default function AllInstances() {
       }
     } catch (error) {
       console.error('Error deleting instance:', error);
-      addNotification({
-        type: 'warning',
-        title: 'Erro ao Remover Instância',
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        priority: 'high'
-      });
+      console.error('❌ Error deleting instance:', error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setDeleting(null);
       setConfirmDelete(null);
@@ -131,24 +114,14 @@ export default function AllInstances() {
       const result = await instanceService.disconnectInstance(instanceId);
       
       if (result.success) {
-        addNotification({
-          type: 'success',
-          title: 'Instância Desconectada',
-          message: `Instância ${instanceName} foi desconectada`,
-          priority: 'normal'
-        });
+        console.log('✅ Instance disconnected:', instanceName);
         
         await loadInstances();
       } else {
         throw new Error(result.message || 'Falha ao desconectar instância');
       }
     } catch (error) {
-      addNotification({
-        type: 'warning',
-        title: 'Erro ao Desconectar',
-        message: error instanceof Error ? error.message : 'Erro desconhecido',
-        priority: 'normal'
-      });
+      console.error('❌ Error disconnecting instance:', error instanceof Error ? error.message : 'Unknown error');
     }
   };
 
